@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A demonstration Canada work permit application portal.">
+  <title>Canada Work Permit Portal</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#" aria-label="Canada Work Permit Portal home">
+      <span class="brand-mark">✦</span>
+      <span><strong>CANADA</strong><small>WORK PERMIT PORTAL</small></span>
+    </a>
+    <nav aria-label="Main navigation">
+      <a href="#how-it-works">How it works</a>
+      <a href="#eligibility">Before you apply</a>
+      <button class="nav-button" id="trackNav">Track application</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">YOUR NEXT CHAPTER STARTS HERE</p>
+        <h1>Take your career<br><span>to Canada.</span></h1>
+        <p class="hero-copy">A simple demonstration portal to organize a Canadian work permit application and keep track of its progress.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#apply">Start an application <span>→</span></a>
+          <a class="text-link" href="#how-it-works">See how it works</a>
+        </div>
+        <p class="notice"><strong>Demo only:</strong> This is not a Government of Canada or IRCC website and cannot submit an official application.</p>
+      </div>
+      <div class="hero-card">
+        <div class="maple">✦</div>
+        <p class="card-label">YOUR APPLICATION JOURNEY</p>
+        <div class="journey-step"><span class="step-number">01</span><span><b>Prepare</b><small>Gather your information</small></span><span class="step-check">✓</span></div>
+        <div class="journey-step"><span class="step-number">02</span><span><b>Apply</b><small>Complete the form below</small></span><span class="step-check">✓</span></div>
+        <div class="journey-step"><span class="step-number">03</span><span><b>Track</b><small>Follow your demo status</small></span><span class="step-check">→</span></div>
+        <div class="canada-line"></div>
+        <p class="card-foot">PLAN • PREPARE • MOVE FORWARD</p>
+      </div>
+    </section>
+
+    <section class="info-strip" id="how-it-works">
+      <div><span class="info-icon">01</span><b>Tell us about you</b><small>Basic applicant details</small></div>
+      <div><span class="info-icon">02</span><b>Add job information</b><small>Employer and offer details</small></div>
+      <div><span class="info-icon">03</span><b>Review your progress</b><small>Demo application tracking</small></div>
+    </section>
+
+    <section class="section" id="eligibility">
+      <div class="section-heading">
+        <p class="eyebrow">GET READY</p>
+        <h2>Before you begin</h2>
+        <p>Use this checklist to prepare. Requirements vary by work permit type and personal circumstances.</p>
+      </div>
+      <div class="prep-grid">
+        <article class="prep-card"><span>▤</span><h3>Valid passport</h3><p>Have your passport details available. Do not enter real passport numbers in this demo.</p></article>
+        <article class="prep-card"><span>⌂</span><h3>Job offer details</h3><p>Prepare the employer's name, job title, and offer information, if applicable.</p></article>
+        <article class="prep-card"><span>▧</span><h3>Supporting documents</h3><p>Check the official IRCC instructions for the documents required for your situation.</p></article>
+      </div>
+      <p class="official-link">For current requirements, visit <a href="https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada.html" target="_blank" rel="noopener">Government of Canada – Work in Canada ↗</a>.</p>
+    </section>
+
+    <section class="application-section" id="apply">
+      <div class="application-wrap">
+        <div class="section-heading">
+          <p class="eyebrow">DEMO APPLICATION</p>
+          <h2>Applicant information</h2>
+          <p>Complete the fields below to create a sample application record on this device.</p>
+        </div>
+        <form id="applicationForm">
+          <div class="form-section-title"><span>01</span><div><h3>Personal details</h3><p>How can we identify your application?</p></div></div>
+          <div class="form-grid">
+            <label>First name<input name="firstName" autocomplete="given-name" required placeholder="e.g. Alex"></label>
+            <label>Last name<input name="lastName" autocomplete="family-name" required placeholder="e.g. Morgan"></label>
+            <label>Email address<input name="email" type="email" autocomplete="email" required placeholder="you@example.com"></label>
+            <label>Phone number<input name="phone" type="tel" autocomplete="tel" placeholder="+1 555 000 0000"></label>
+            <label>Country of citizenship<input name="citizenship" required placeholder="Your country"></label>
+            <label>Current country of residence<input name="residence" required placeholder="Where you live now"></label>
+          </div>
+
+          <div class="form-section-title"><span>02</span><div><h3>Work details</h3><p>Information about the employment opportunity.</p></div></div>
+          <div class="form-grid">
+            <label>Work permit pathway
+              <select name="permitType" required>
+                <option value="">Choose one</option>
+                <option>Employer-specific work permit</option>
+                <option>Open work permit</option>
+                <option>Not sure yet</option>
+              </select>
+            </label>
+            <label>Job title<input name="jobTitle" placeholder="e.g. Software developer"></label>
+            <label>Canadian employer name<input name="employer" placeholder="Company or employer"></label>
+            <label>Job location in Canada<input name="jobLocation" placeholder="City and province"></label>
+            <label class="full">Do you have a written job offer?
+              <select name="jobOffer" required><option value="">Choose one</option><option>Yes</option><option>No</option><option>Not sure</option></select>
+            </label>
+          </div>
+
+          <div class="form-section-title"><span>03</span><div><h3>Document checklist</h3><p>Tick items you have prepared. Do not upload sensitive documents here.</p></div></div>
+          <div class="checklist">
+            <label><input type="checkbox" name="documents" value="Passport information"> Passport information prepared</label>
+            <label><input type="checkbox" name="documents" value="Job offer or employment details"> Job offer or employment details</label>
+            <label><input type="checkbox" name="documents" value="Resume or CV"> Resume or CV</label>
+            <label><input type="checkbox" name="documents" value="Other supporting documents"> Other supporting documents checked</label>
+          </div>
+          <label class="consent"><input type="checkbox" id="demoConsent" required> I understand this is a demonstration only and I will not enter real sensitive personal information.</label>
+          <button class="button button-primary submit-button" type="submit">Save demo application <span>→</span></button>
+          <p class="form-message" id="formMessage" role="status"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="tracking-section" id="tracking">
+      <div class="tracking-card">
+        <div><p class="eyebrow">APPLICATION TRACKER</p><h2>Check your demo application</h2><p>Enter the reference number shown after saving an application on this device.</p></div>
+        <form id="trackingForm" class="tracking-form"><label for="reference">Application reference</label><div class="track-input-row"><input id="reference" required placeholder="e.g. CA-WP-123456"><button class="button button-dark" type="submit">Check status</button></div><p id="trackingResult" role="status"></p></form>
+      </div>
+    </section>
+  </main>
+
+  <footer><a class="brand footer-brand" href="#"><span class="brand-mark">✦</span><span><strong>CANADA</strong><small>WORK PERMIT PORTAL</small></span></a><p>Independent demonstration project. Not affiliated with the Government of Canada or IRCC.</p><small>© 2026 Canada Work Permit Portal Demo</small></footer>
+  <script src="script.js"></script>
+</body>
+</html>
