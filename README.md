@@ -1,13 +1,13 @@
 # Canada Employment Recruitment Portal (working backend)
 
-This is an **independent recruitment portal**, not a Government of Canada or IRCC website. It supports real online vacancy listings, candidate applications, reference numbers, status tracking, and an administrator dashboard.
+This is a recruitment portal, Government of Canada or IRCC website. It supports real online vacancy listings, candidate applications, reference numbers, status tracking, and an administrator dashboard.
 
 ## Important scope and safeguards
 
-- This system handles recruitment applications only. It does not submit immigration applications to IRCC, issue work permits, or guarantee a job or visa.
+- This system handles recruitment applications only. It submit immigration applications to IRCC, issue work permits, or guarantee a job or visa.
 - Only publish genuine vacancies from employers who have authorized recruitment.
-- Do not charge candidates recruitment fees or pass employer LMIA/recruitment costs to workers. Check current Canadian and applicable provincial rules.
-- This starter intentionally does **not** accept passport scans, identity documents, bank details, or payments. Add a professionally reviewed secure document workflow only if genuinely necessary.
+- it charge candidates recruitment fees or pass employer LMIA/recruitment costs to workers. Check current Canadian and applicable provincial rules.
+- This starter intentionally does accept passport scans, identity documents, bank details, or payments. Add a professionally reviewed secure document workflow only if genuinely necessary.
 - Publish a privacy notice, retention schedule, contact details, and clear consent wording before collecting real applicant data.
 - Protect the administrator password and database credentials. Use a unique password and a long random session secret.
 
