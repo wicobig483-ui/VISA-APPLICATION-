@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Independent recruitment portal for verified employment opportunities.">
+  <title>Canada Employment Opportunities | Independent Recruitment Portal</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap nav"><a class="brand" href="/">Canada Employment Portal</a><nav><a href="#vacancies">Vacancies</a><a href="#apply">Apply</a><a href="#track">Track application</a><a href="/admin.html">Admin</a></nav></div>
+</header>
+<main class="wrap">
+  <section class="hero">
+    <p class="eyebrow">INDEPENDENT RECRUITMENT SERVICE</p>
+    <h1>Find your next employment opportunity in Canada.</h1>
+    <p>Explore published vacancies and submit your profile for recruitment consideration.</p>
+    <a class="btn" href="#vacancies">View vacancies</a>
+  </section>
+  <div class="notice"><strong>Important:</strong> This is an independent recruitment platform. It is not the Government of Canada or IRCC, does not issue visas, and cannot guarantee a job or immigration approval. Verify every employer and offer independently. Never pay a recruiter for a job offer or LMIA.</div>
+  <section id="vacancies" class="section">
+    <div class="section-head"><div><p class="eyebrow">CURRENT OPENINGS</p><h2>Available vacancies</h2></div><button class="btn secondary" id="reloadJobs">Refresh</button></div>
+    <div id="jobs" class="jobs"><p>Loading vacancies…</p></div>
+  </section>
+  <section id="apply" class="section panel">
+    <p class="eyebrow">CANDIDATE REGISTRATION</p><h2>Submit your application</h2>
+    <p class="muted">Provide accurate information. Do not submit passport numbers, bank details, or identity documents through this form.</p>
+    <form id="applicationForm" class="form-grid">
+      <label>Full name *<input name="fullName" required maxlength="120" autocomplete="name"></label>
+      <label>Email address *<input name="email" type="email" required maxlength="254" autocomplete="email"></label>
+      <label>Current country of residence *<input name="country" required maxlength="100"></label>
+      <label>Occupation / profession *<input name="occupation" required maxlength="120"></label>
+      <label>Relevant work experience *<select name="experience" required><option value="">Choose one</option><option>Less than 2 years</option><option>2–5 years</option><option>6–10 years</option><option>More than 10 years</option><option>No formal experience</option></select></label>
+      <label>Highest education *<select name="education" required><option value="">Choose one</option><option>Primary</option><option>Secondary</option><option>Certificate</option><option>Diploma</option><option>Bachelor's degree</option><option>Postgraduate</option><option>Other</option></select></label>
+      <label>CV / résumé status *<select name="cvStatus" required><option value="">Choose one</option><option>I have an updated CV</option><option>I need help preparing my CV</option></select></label>
+      <label>Vacancy (optional)<select name="jobId" id="jobSelect"><option value="">General profile registration</option></select></label>
+      <label class="full">Additional information (optional)<textarea name="message" rows="4" maxlength="1500"></textarea></label>
+      <label class="check full"><input type="checkbox" name="consent" required> I confirm that the information is accurate and consent to its use for recruitment assessment. I understand this does not guarantee employment or a visa.</label>
+      <div class="full"><button class="btn" type="submit">Submit application</button><p id="applyResult" class="result" role="status"></p></div>
+    </form>
+  </section>
+  <section id="track" class="section panel">
+    <p class="eyebrow">APPLICATION STATUS</p><h2>Track your application</h2>
+    <form id="trackForm" class="form-grid compact">
+      <label>Reference number<input name="reference" placeholder="e.g. CA-ABC123..." required></label>
+      <label>Email used to apply<input name="email" type="email" required></label>
+      <div class="full"><button class="btn secondary" type="submit">Check status</button><p id="trackResult" class="result" role="status"></p></div>
+    </form>
+  </section>
+</main>
+<footer><div class="wrap"><p>Independent recruitment service · Not affiliated with IRCC or the Government of Canada.</p><p>For immigration rules and official applications, visit <a href="https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada.html" target="_blank" rel="noopener">Canada.ca</a>.</p></div></footer>
+<script src="/app.js"></script>
+</body></html>
