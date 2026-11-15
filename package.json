@@ -18,7 +18,7 @@
     "express-session": "^1.18.1",
     "helmet": "^8.0.0",
     "pg": "^8.13.1",
-    "cloudinary": "^2.7.0",
+    "cloudinary": "^1.41.3",
     "multer": "^2.0.2",
     "multer-storage-cloudinary": "^4.0.0"
   }
