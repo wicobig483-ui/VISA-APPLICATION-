@@ -2,7 +2,7 @@
   "name": "canada-recruitment-portal",
   "version": "1.0.0",
   "private": true,
-  "description": "Independent Canada employment recruitment portal",
+  "description": "Dependent Canada employment recruitment portal",
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "engines": { "node": ">=20" },
