@@ -1,19 +1,148 @@
+
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Admin | Canada Employment Portal</title><link rel="stylesheet" href="/styles.css"></head>
-<body><header class="top"><div class="wrap nav"><a class="brand" href="/">Canada Employment Portal</a><a href="/">View public site</a></div></header>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin | Canada Employment Portal</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap nav">
+    <a class="brand" href="/">Canada Employment Portal</a>
+    <a href="/">View public site</a>
+  </div>
+</header>
+
 <main class="wrap admin">
-  <section id="loginPanel" class="panel narrow"><p class="eyebrow">PRIVATE AREA</p><h1>Administrator sign in</h1>
-    <form id="loginForm"><label>Email<input name="email" type="email" required></label><label>Password<input name="password" type="password" required></label><button class="btn" type="submit">Sign in</button><p id="loginResult" class="result" role="status"></p></form>
+
+  <section id="loginPanel" class="panel narrow">
+    <p class="eyebrow">PRIVATE AREA</p>
+    <h1>Administrator sign in</h1>
+    <form id="loginForm">
+      <label>Email
+        <input name="email" type="email" required>
+      </label>
+      <label>Password
+        <input name="password" type="password" required>
+      </label>
+      <button class="btn" type="submit">Sign in</button>
+      <p id="loginResult" class="result" role="status"></p>
+    </form>
   </section>
+
   <section id="dashboard" hidden>
-    <div class="section-head"><div><p class="eyebrow">RECRUITMENT MANAGEMENT</p><h1>Admin dashboard</h1></div><button id="logout" class="btn secondary">Sign out</button></div>
-    <section class="panel"><h2>Publish a vacancy</h2><form id="jobForm" class="form-grid">
-      <label>Job title *<input name="title" required maxlength="150"></label><label>Location *<input name="location" required maxlength="120" placeholder="City, Province"></label>
-      <label>Employment type<input name="employmentType" value="Full-time"></label>
-      <label class="full">Description *<textarea name="description" rows="4" required maxlength="3000"></textarea></label>
-      <label class="full">Requirements<textarea name="requirements" rows="3" maxlength="3000"></textarea></label>
-      <div class="full"><button class="btn" type="submit">Publish vacancy</button><p id="jobResult" class="result" role="status"></p></div>
-    </form></section>
-    <section class="section"><h2>Applications</h2><button class="btn secondary" id="loadApplications">Refresh applications</button><div id="applications" class="table-wrap"><p>Sign in to load records.</p></div></section>
+
+    <div class="section-head">
+      <div>
+        <p class="eyebrow">RECRUITMENT MANAGEMENT</p>
+        <h1>Admin dashboard</h1>
+      </div>
+      <button id="logout" class="btn secondary">Sign out</button>
+    </div>
+
+    <section class="panel">
+      <h2>Publish a vacancy</h2>
+
+      <form id="jobForm" class="form-grid">
+
+        <label>Job title *
+          <input name="title" required maxlength="150">
+        </label>
+
+        <label>Location *
+          <input name="location" required maxlength="120"
+                 placeholder="City, Province">
+        </label>
+
+        <label>Employment type
+          <input name="employmentType" value="Full-time">
+        </label>
+
+        <label class="full">Description *
+          <textarea name="description" rows="4"
+                    required maxlength="3000"></textarea>
+        </label>
+
+        <label class="full">Requirements
+          <textarea name="requirements" rows="3"
+                    maxlength="3000"></textarea>
+        </label>
+
+        <div class="full">
+          <label>Vacancy photo (JPG, PNG or WEBP)
+            <input id="jobImage" type="file"
+                   accept="image/jpeg,image/png,image/webp">
+          </label>
+          <img id="jobPreview" alt="Vacancy photo preview"
+               hidden style="max-width:100%;max-height:220px;margin-top:12px;border-radius:10px;">
+        </div>
+
+        <div class="full">
+          <button class="btn" type="submit">Publish vacancy</button>
+          <p id="jobResult" class="result" role="status"></p>
+        </div>
+
+      </form>
+    </section>
+
+    <section class="panel section">
+      <h2>Homepage photo gallery</h2>
+      <p>Upload photos to display in your public website gallery.</p>
+
+      <form id="galleryForm">
+
+        <label>Photo title *
+          <input name="title" maxlength="150" required>
+        </label>
+
+        <label>Description
+          <textarea name="description" rows="3"
+                    maxlength="1000"></textarea>
+        </label>
+
+        <label>Select gallery photo *
+          <input id="galleryImage" type="file"
+                 accept="image/jpeg,image/png,image/webp"
+                 required>
+        </label>
+
+        <img id="galleryPreview" alt="Gallery photo preview"
+             hidden style="max-width:100%;max-height:220px;margin-top:12px;border-radius:10px;">
+
+        <p>
+          <button class="btn" type="submit">Upload gallery photo</button>
+        </p>
+
+        <p id="galleryResult" class="result" role="status"></p>
+
+      </form>
+    </section>
+
+    <section class="section">
+      <h2>Manage gallery photos</h2>
+      <button class="btn secondary" id="refreshGallery" type="button">
+        Refresh gallery
+      </button>
+      <div id="galleryList" class="table-wrap">
+        <p>Loading gallery...</p>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2>Applications</h2>
+      <button class="btn secondary" id="loadApplications" type="button">
+        Refresh applications
+      </button>
+      <div id="applications" class="table-wrap">
+        <p>Sign in to load records.</p>
+      </div>
+    </section>
+
   </section>
-</main><script src="/admin.js"></script></body></html>
+</main>
+
+<script src="/admin.js"></script>
+</body>
+</html>
