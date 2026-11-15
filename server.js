@@ -50,7 +50,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// MULTER + CLOUDINARY STORAGE
+// CLOUDINARY STORAGE
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (_req, _file) => ({
@@ -224,10 +224,8 @@ app.get("/api/jobs", async (_req, res) => {
     `);
 
     res.json(result.rows);
-
   } catch (err) {
     console.error(err);
-
     res.status(500).json({
       error: "Unable to load vacancies."
     });
@@ -250,10 +248,8 @@ app.get("/api/gallery", async (_req, res) => {
     `);
 
     res.json(result.rows);
-
   } catch (err) {
     console.error(err);
-
     res.status(500).json({
       error: "Unable to load gallery."
     });
@@ -480,7 +476,7 @@ app.get(
   }
 );
 
-// UPLOAD IMAGE
+// UPLOAD IMAGE - FIXED CLOUDINARY URL HANDLING
 app.post(
   "/api/admin/uploads",
   adminOnly,
@@ -492,10 +488,28 @@ app.post(
       });
     }
 
+    console.log("Cloudinary upload result:", req.file);
+
+    // multer-storage-cloudinary commonly returns the URL in path.
+    // secure_url is checked first when available.
+    const imageUrl =
+      req.file.secure_url ||
+      req.file.path;
+
+    const imagePublicId =
+      req.file.public_id ||
+      req.file.filename;
+
+    if (!imageUrl) {
+      return res.status(500).json({
+        error: "Cloudinary did not return an image URL."
+      });
+    }
+
     res.status(201).json({
       image: {
-        url: req.file.path,
-        publicId: req.file.filename
+        url: imageUrl,
+        publicId: imagePublicId
       }
     });
   }
@@ -834,7 +848,7 @@ app.patch(
   }
 );
 
-// MULTER ERROR HANDLING
+// ERROR HANDLING
 app.use((err, _req, res, next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
@@ -875,8 +889,7 @@ app.get("*", (_req, res) => {
 // START SERVER
 initializeDatabase()
   .then(() => {
-    const port =
-      process.env.PORT || 3000;
+    const port = process.env.PORT || 3000;
 
     app.listen(port, () => {
       console.log(
