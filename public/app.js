@@ -2,15 +2,26 @@
 const $ = (s) => document.querySelector(s);
 
 function show(el, message, error = false) {
+  if (!el) return;
+
   el.textContent = message;
   el.classList.toggle("error", error);
 }
 
 async function api(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+
+  if (
+    options.body &&
+    !(options.body instanceof FormData)
+  ) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const response = await fetch(url, {
     credentials: "same-origin",
-    headers: { "Content-Type": "application/json" },
-    ...options
+    ...options,
+    headers
   });
 
   const data = await response.json().catch(() => ({
@@ -24,120 +35,205 @@ async function api(url, options = {}) {
   return data;
 }
 
-/* LOAD JOB VACANCIES */
+/* =====================================
+   LOAD JOB VACANCIES AND VIDEOS
+===================================== */
 
 async function loadJobs() {
   const box = $("#jobs");
-  const select = $("#jobSelect");
+  const select = $("#jobSelect") || $('input[name="jobId"]');
+
+  if (!box) return;
+
+  box.textContent = "Loading vacancies...";
 
   try {
     const jobs = await api("/api/jobs");
 
-    box.innerHTML = "";
-    select.innerHTML =
-      '<option value="">General profile registration</option>';
+    box.replaceChildren();
 
-    if (!jobs.length) {
-      box.innerHTML =
-        "<p>No vacancies are currently published. You may still submit a general profile.</p>";
+    if (select && select.tagName === "SELECT") {
+      select.innerHTML =
+        '<option value="">General profile registration</option>';
+    }
+
+    if (!Array.isArray(jobs) || !jobs.length) {
+      box.textContent =
+        "No vacancies are currently published. You may still submit a general profile.";
       return;
     }
 
-    jobs.forEach(j => {
+    jobs.forEach((job) => {
       const card = document.createElement("article");
       card.className = "job";
 
-      // Vacancy photo
-      if (j.image_url) {
+      // VACANCY PHOTO
+      if (job.image_url) {
         const img = document.createElement("img");
-        img.src = j.image_url;
-        img.alt = j.title || "Job vacancy photo";
+
+        img.src = job.image_url;
+        img.alt = job.title || "Job vacancy photo";
         img.loading = "lazy";
         img.className = "job-image";
 
-        img.addEventListener("error", () => {
-          img.remove();
-        });
+        img.addEventListener("error", () => img.remove());
 
         card.append(img);
       }
 
-      const h = document.createElement("h3");
-      h.textContent = j.title;
+      // JOB VIDEO
+      if (job.video_url) {
+        try {
+          const videoUrl = new URL(job.video_url);
 
-      const loc = document.createElement("p");
-      loc.className = "muted";
-      loc.textContent = `${j.location} · ${j.employment_type}`;
+          if (videoUrl.protocol === "https:") {
+            const video = document.createElement("video");
 
-      const desc = document.createElement("p");
-      desc.textContent = j.description;
+            video.className = "job-video-player";
+            video.controls = true;
+            video.playsInline = true;
+            video.preload = "metadata";
+            video.setAttribute("controlsList", "nodownload");
 
-      const req = document.createElement("p");
-      req.textContent = j.requirements
-        ? `Requirements: ${j.requirements}`
+            if (job.image_url) {
+              video.poster = job.image_url;
+            }
+
+            video.src = videoUrl.href;
+
+            video.addEventListener("error", () => {
+              const errorMessage = document.createElement("p");
+
+              errorMessage.className = "video-error";
+              errorMessage.textContent =
+                "This job video could not be played.";
+
+              video.replaceWith(errorMessage);
+            });
+
+            card.append(video);
+          }
+        } catch (error) {
+          console.error("Invalid job video URL:", error);
+        }
+      }
+
+      // JOB TITLE
+      const heading = document.createElement("h3");
+      heading.textContent = job.title || "Job opportunity";
+
+      // LOCATION AND EMPLOYMENT TYPE
+      const location = document.createElement("p");
+      location.className = "muted";
+      location.textContent =
+        `${job.location || ""} · ${job.employment_type || ""}`;
+
+      // DESCRIPTION
+      const description = document.createElement("p");
+      description.textContent = job.description || "";
+
+      // REQUIREMENTS
+      const requirements = document.createElement("p");
+      requirements.textContent = job.requirements
+        ? `Requirements: ${job.requirements}`
         : "";
 
-      const choose = document.createElement("button");
-      choose.className = "btn secondary";
-      choose.textContent = "Apply for this job";
+      // APPLY BUTTON
+      const applyButton = document.createElement("button");
 
-      choose.addEventListener("click", () => {
-        select.value = String(j.id);
-        location.hash = "apply";
+      applyButton.type = "button";
+      applyButton.className = "btn secondary";
+      applyButton.textContent = "Apply for this job";
+
+      applyButton.addEventListener("click", () => {
+        if (select) {
+          select.value = String(job.id);
+        }
+
+        const hiddenJobId = $('input[name="jobId"]');
+
+        if (hiddenJobId) {
+          hiddenJobId.value = String(job.id);
+        }
+
+        const applicationSection =
+          $("#apply") || $("#application");
+
+        if (applicationSection) {
+          applicationSection.scrollIntoView({
+            behavior: "smooth"
+          });
+        } else {
+          location.hash = "apply";
+        }
       });
 
-      card.append(h, loc, desc, req, choose);
+      card.append(
+        heading,
+        location,
+        description,
+        requirements,
+        applyButton
+      );
+
       box.append(card);
 
-      const opt = document.createElement("option");
-      opt.value = j.id;
-      opt.textContent = j.title + " — " + j.location;
-      select.append(opt);
+      // APPLICATION DROPDOWN
+      if (select && select.tagName === "SELECT") {
+        const option = document.createElement("option");
+
+        option.value = String(job.id);
+        option.textContent =
+          `${job.title} — ${job.location}`;
+
+        select.append(option);
+      }
     });
 
-  } catch (e) {
-    box.textContent = e.message;
+  } catch (error) {
+    box.textContent = error.message;
+    console.error("Jobs loading error:", error);
   }
 }
 
-/* LOAD GALLERY PHOTOS */
+/* =====================================
+   LOAD HOMEPAGE GALLERY
+===================================== */
 
 async function loadGalleryPhotos() {
   const gallery = $("#canadaGalleryGrid");
 
-  if (!gallery) {
-    console.error("Gallery container was not found.");
-    return;
-  }
+  if (!gallery) return;
 
   try {
     const photos = await api("/api/gallery");
 
-    gallery.innerHTML = "";
+    gallery.replaceChildren();
 
     if (!photos.length) {
       gallery.textContent = "No photos available yet.";
       return;
     }
 
-    photos.forEach(photo => {
+    photos.forEach((photo) => {
       const card = document.createElement("article");
       card.className = "gallery-card";
 
       const img = document.createElement("img");
+
       img.src = photo.image_url;
       img.alt = photo.title || "Canada job opportunity";
       img.loading = "lazy";
+
+      img.addEventListener("error", () => {
+        img.alt = "Photo could not be loaded";
+      });
 
       const title = document.createElement("h3");
       title.textContent = photo.title || "";
 
       const description = document.createElement("p");
       description.textContent = photo.description || "";
-
-      img.addEventListener("error", () => {
-        img.alt = "Photo could not be loaded";
-      });
 
       card.append(img, title, description);
       gallery.append(card);
@@ -149,68 +245,123 @@ async function loadGalleryPhotos() {
   }
 }
 
-/* RELOAD JOBS BUTTON */
+/* =====================================
+   RELOAD JOBS BUTTON
+===================================== */
 
-$("#reloadJobs").addEventListener("click", loadJobs);
+const reloadJobsButton = $("#reloadJobs");
 
-/* APPLICATION FORM */
+if (reloadJobsButton) {
+  reloadJobsButton.addEventListener("click", loadJobs);
+}
 
-$("#applicationForm").addEventListener("submit", async e => {
-  e.preventDefault();
+/* =====================================
+   APPLICATION FORM
+===================================== */
 
-  const form = e.currentTarget;
-  const result = $("#applyResult");
+const applicationForm = $("#applicationForm");
 
-  const f = new FormData(form);
-  const payload = Object.fromEntries(f.entries());
+if (applicationForm) {
+  applicationForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
 
-  payload.phone = (f.get("phone") || "").toString().trim();
-  payload.consent = f.get("consent") === "on";
-  payload.jobId = payload.jobId || null;
+    const form = event.currentTarget;
 
-  try {
-    const data = await api("/api/applications", {
-      method: "POST",
-      body: JSON.stringify(payload)
-    });
+    const result =
+      $("#formMessage") || $("#applyResult");
 
-    show(
-      result,
-      `${data.message} Your tracking reference is ${data.reference}. Save it and use the same email address in the tracking section.`
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+
+    const consentField = form.querySelector(
+      '[name="consent"]'
     );
 
-    form.reset();
+    payload.phone = String(payload.phone || "").trim();
 
-  } catch (err) {
-    show(result, err.message, true);
-  }
-});
-
-/* APPLICATION TRACKING FORM */
-
-$("#trackForm").addEventListener("submit", async e => {
-  e.preventDefault();
-
-  const f = new FormData(e.currentTarget);
-
-  try {
-    const d = await api("/api/track", {
-      method: "POST",
-      body: JSON.stringify(Object.fromEntries(f.entries()))
-    });
-
-    show(
-      $("#trackResult"),
-      `Reference: ${d.reference} · Status: ${d.status} · Vacancy: ${d.job_title || "General profile"} · Last updated: ${new Date(d.updated_at).toLocaleString()}`
+    // Server expects a Boolean, not "on" or "yes".
+    payload.consent = Boolean(
+      consentField && consentField.checked
     );
 
-  } catch (err) {
-    show($("#trackResult"), err.message, true);
-  }
-});
+    // Ensure the job ID is a valid number or null.
+    const jobId = Number(payload.jobId);
 
-/* START WEBSITE FEATURES */
+    payload.jobId =
+      Number.isSafeInteger(jobId) && jobId > 0
+        ? jobId
+        : null;
+
+    const button = form.querySelector(
+      '[type="submit"]'
+    );
+
+    if (button) button.disabled = true;
+
+    try {
+      const data = await api("/api/applications", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      show(
+        result,
+        `${data.message} Your tracking reference is ${data.reference}. Save it and use the same email address in the tracking section.`
+      );
+
+      form.reset();
+
+    } catch (error) {
+      show(result, error.message, true);
+
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
+
+/* =====================================
+   APPLICATION TRACKING
+===================================== */
+
+const trackingForm =
+  $("#trackingForm") || $("#trackForm");
+
+if (trackingForm) {
+  trackingForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const form = event.currentTarget;
+
+    const result =
+      $("#trackingResult") || $("#trackResult");
+
+    const formData = new FormData(form);
+
+    const payload = Object.fromEntries(
+      formData.entries()
+    );
+
+    try {
+      const data = await api("/api/track", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      show(
+        result,
+        `Reference: ${data.reference} · Status: ${data.status} · Vacancy: ${data.job_title || "General profile"} · Last updated: ${new Date(data.updated_at).toLocaleString()}`
+      );
+
+    } catch (error) {
+      show(result, error.message, true);
+    }
+  });
+}
+
+/* =====================================
+   START WEBSITE
+===================================== */
 
 loadJobs();
 loadGalleryPhotos();
-                              
