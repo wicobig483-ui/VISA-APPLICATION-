@@ -5,7 +5,10 @@ const $ = (s) => document.querySelector(s);
 async function api(url, options = {}) {
   const headers = { ...(options.headers || {}) };
 
-  if (!(options.body instanceof FormData) && options.body !== undefined) {
+  if (
+    !(options.body instanceof FormData) &&
+    options.body !== undefined
+  ) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -29,60 +32,154 @@ async function api(url, options = {}) {
 // MESSAGES
 function msg(el, message, bad = false) {
   if (!el) return;
+
   el.textContent = message;
   el.classList.toggle("error", bad);
 }
 
 // IMAGE PREVIEW
-function previewImage(input, preview) {
+function previewImage(input, preview, resultElement) {
   if (!input || !preview) return;
 
   let previousUrl = null;
 
   input.addEventListener("change", () => {
-    if (previousUrl) URL.revokeObjectURL(previousUrl);
+    if (previousUrl) {
+      URL.revokeObjectURL(previousUrl);
+      previousUrl = null;
+    }
 
     const file = input.files[0];
 
     if (!file) {
       preview.hidden = true;
       preview.removeAttribute("src");
-      previousUrl = null;
       return;
     }
 
-    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ];
+
+    if (!allowed.includes(file.type)) {
       input.value = "";
       preview.hidden = true;
-      msg($("#jobResult"), "Select a JPG, PNG or WEBP image.", true);
-      msg($("#galleryResult"), "Select a JPG, PNG or WEBP image.", true);
+
+      msg(
+        resultElement,
+        "Select a JPG, PNG or WEBP image.",
+        true
+      );
+
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       input.value = "";
       preview.hidden = true;
-      msg($("#jobResult"), "Image must be 5MB or smaller.", true);
-      msg($("#galleryResult"), "Image must be 5MB or smaller.", true);
+
+      msg(
+        resultElement,
+        "Image must be 5MB or smaller.",
+        true
+      );
+
       return;
     }
 
     previousUrl = URL.createObjectURL(file);
     preview.src = previousUrl;
     preview.hidden = false;
+
+    msg(resultElement, "");
   });
 }
 
-previewImage($("#jobImage"), $("#jobPreview"));
-previewImage($("#galleryImage"), $("#galleryPreview"));
+previewImage(
+  $("#jobImage"),
+  $("#jobPreview"),
+  $("#jobResult")
+);
+
+previewImage(
+  $("#galleryImage"),
+  $("#galleryPreview"),
+  $("#galleryResult")
+);
+
+// VIDEO PREVIEW
+const jobVideoInput = $("#jobVideo");
+const jobVideoPreview = $("#jobVideoPreview");
+
+if (jobVideoInput && jobVideoPreview) {
+  let previousVideoUrl = null;
+
+  jobVideoInput.addEventListener("change", () => {
+    if (previousVideoUrl) {
+      URL.revokeObjectURL(previousVideoUrl);
+      previousVideoUrl = null;
+    }
+
+    jobVideoPreview.pause();
+    jobVideoPreview.removeAttribute("src");
+    jobVideoPreview.load();
+    jobVideoPreview.hidden = true;
+
+    const file = jobVideoInput.files[0];
+
+    if (!file) return;
+
+    const allowedVideoTypes = [
+      "video/mp4",
+      "video/quicktime",
+      "video/webm"
+    ];
+
+    if (!allowedVideoTypes.includes(file.type)) {
+      jobVideoInput.value = "";
+
+      msg(
+        $("#videoResult"),
+        "Select an MP4, MOV or WEBM video.",
+        true
+      );
+
+      return;
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      jobVideoInput.value = "";
+
+      msg(
+        $("#videoResult"),
+        "Video must be 100MB or smaller.",
+        true
+      );
+
+      return;
+    }
+
+    previousVideoUrl = URL.createObjectURL(file);
+
+    jobVideoPreview.src = previousVideoUrl;
+    jobVideoPreview.hidden = false;
+
+    msg(
+      $("#videoResult"),
+      "Video selected successfully."
+    );
+  });
+}
 
 // UPLOAD IMAGE TO CLOUDINARY THROUGH SERVER
-async function uploadImage(file, folder) {
+async function uploadImage(file) {
   if (!file) return null;
 
   const formData = new FormData();
+
   formData.append("image", file);
-  formData.append("folder", folder);
 
   const result = await api("/api/admin/uploads", {
     method: "POST",
@@ -90,6 +187,22 @@ async function uploadImage(file, folder) {
   });
 
   return result.image;
+}
+
+// UPLOAD VIDEO TO CLOUDINARY THROUGH SERVER
+async function uploadVideo(file) {
+  if (!file) return null;
+
+  const formData = new FormData();
+
+  formData.append("video", file);
+
+  const result = await api("/api/admin/video-uploads", {
+    method: "POST",
+    body: formData
+  });
+
+  return result.video;
 }
 
 // LOGIN AND DASHBOARD
@@ -134,6 +247,7 @@ if (loginForm) {
       });
 
       msg($("#loginResult"), "Signed in.");
+
       await showDashboard();
 
     } catch (err) {
@@ -152,15 +266,17 @@ if (logoutButton) {
         method: "POST",
         body: "{}"
       });
+
     } catch (err) {
       alert(err.message);
+
     } finally {
       location.reload();
     }
   });
 }
 
-// PUBLISH VACANCY WITH OPTIONAL PHOTO
+// PUBLISH VACANCY WITH OPTIONAL PHOTO AND VIDEO
 const jobForm = $("#jobForm");
 
 if (jobForm) {
@@ -168,43 +284,103 @@ if (jobForm) {
     e.preventDefault();
 
     const button = jobForm.querySelector('[type="submit"]');
-    const file = $("#jobImage").files[0];
+
+    const imageFile = $("#jobImage")?.files[0] || null;
+    const videoFile = $("#jobVideo")?.files[0] || null;
 
     const formData = Object.fromEntries(
       new FormData(jobForm).entries()
     );
 
     delete formData.image;
+    delete formData.video;
 
     button.disabled = true;
-    msg($("#jobResult"), "Publishing vacancy...");
 
     try {
       let image = null;
+      let video = null;
 
-      if (file) {
-        msg($("#jobResult"), "Uploading vacancy photo...");
-        image = await uploadImage(file, "vacancies");
+      // UPLOAD IMAGE
+      if (imageFile) {
+        msg(
+          $("#jobResult"),
+          "Uploading vacancy photo..."
+        );
+
+        image = await uploadImage(imageFile);
       }
 
+      // UPLOAD VIDEO
+      if (videoFile) {
+        msg(
+          $("#videoResult"),
+          "Uploading job video. Please wait..."
+        );
+
+        video = await uploadVideo(videoFile);
+
+        msg(
+          $("#videoResult"),
+          "Video uploaded successfully."
+        );
+      }
+
+      // PREPARE VACANCY DATA
       const payload = {
         ...formData,
+
         imageUrl: image ? image.url : null,
-        imagePublicId: image ? image.publicId : null
+        imagePublicId: image ? image.publicId : null,
+
+        videoUrl: video ? video.url : null,
+        videoPublicId: video ? video.publicId : null
       };
 
+      msg(
+        $("#jobResult"),
+        "Publishing vacancy..."
+      );
+
+      // SAVE VACANCY
       await api("/api/admin/jobs", {
         method: "POST",
         body: JSON.stringify(payload)
       });
 
-      msg($("#jobResult"), "Vacancy published successfully!");
+      msg(
+        $("#jobResult"),
+        "Vacancy and its media published successfully!"
+      );
 
+      msg($("#videoResult"), "");
+
+      // RESET FORM
       jobForm.reset();
-      $("#jobPreview").hidden = true;
+
+      if ($("#jobPreview")) {
+        $("#jobPreview").hidden = true;
+        $("#jobPreview").removeAttribute("src");
+      }
+
+      if (jobVideoPreview) {
+        jobVideoPreview.pause();
+        jobVideoPreview.hidden = true;
+        jobVideoPreview.removeAttribute("src");
+        jobVideoPreview.load();
+      }
+
+      // RELEASE PREVIEW URL
+      if (jobVideoPreview && jobVideoInput) {
+        // The next video selection will also release its previous URL.
+      }
 
     } catch (err) {
-      msg($("#jobResult"), err.message, true);
+      msg(
+        $("#jobResult"),
+        err.message,
+        true
+      );
 
     } finally {
       button.disabled = false;
@@ -220,10 +396,15 @@ if (galleryForm) {
     e.preventDefault();
 
     const button = galleryForm.querySelector('[type="submit"]');
-    const file = $("#galleryImage").files[0];
+    const file = $("#galleryImage")?.files[0];
 
     if (!file) {
-      msg($("#galleryResult"), "Please select a photo.", true);
+      msg(
+        $("#galleryResult"),
+        "Please select a photo.",
+        true
+      );
+
       return;
     }
 
@@ -232,10 +413,14 @@ if (galleryForm) {
     );
 
     button.disabled = true;
-    msg($("#galleryResult"), "Uploading gallery photo...");
+
+    msg(
+      $("#galleryResult"),
+      "Uploading gallery photo..."
+    );
 
     try {
-      const image = await uploadImage(file, "gallery");
+      const image = await uploadImage(file);
 
       await api("/api/admin/gallery", {
         method: "POST",
@@ -247,15 +432,26 @@ if (galleryForm) {
         })
       });
 
-      msg($("#galleryResult"), "Gallery photo published successfully!");
+      msg(
+        $("#galleryResult"),
+        "Gallery photo published successfully!"
+      );
 
       galleryForm.reset();
-      $("#galleryPreview").hidden = true;
+
+      if ($("#galleryPreview")) {
+        $("#galleryPreview").hidden = true;
+        $("#galleryPreview").removeAttribute("src");
+      }
 
       await loadGallery();
 
     } catch (err) {
-      msg($("#galleryResult"), err.message, true);
+      msg(
+        $("#galleryResult"),
+        err.message,
+        true
+      );
 
     } finally {
       button.disabled = false;
@@ -266,6 +462,7 @@ if (galleryForm) {
 // LOAD GALLERY PHOTOS
 async function loadGallery() {
   const box = $("#galleryList");
+
   if (!box) return;
 
   box.textContent = "Loading gallery...";
@@ -279,6 +476,7 @@ async function loadGallery() {
     }
 
     const list = document.createElement("div");
+
     list.style.display = "grid";
     list.style.gridTemplateColumns =
       "repeat(auto-fit, minmax(220px, 1fr))";
@@ -286,9 +484,11 @@ async function loadGallery() {
 
     rows.forEach((photo) => {
       const card = document.createElement("article");
+
       card.className = "panel";
 
       const img = document.createElement("img");
+
       img.src = photo.image_url;
       img.alt = photo.title;
       img.loading = "lazy";
@@ -298,17 +498,24 @@ async function loadGallery() {
       img.style.borderRadius = "8px";
 
       const title = document.createElement("h3");
+
       title.textContent = photo.title;
 
       const description = document.createElement("p");
+
       description.textContent = photo.description || "";
 
       const status = document.createElement("p");
-      status.textContent = photo.active ? "Published" : "Hidden";
+
+      status.textContent = photo.active
+        ? "Published"
+        : "Hidden";
 
       const toggle = document.createElement("button");
+
       toggle.type = "button";
       toggle.className = "btn secondary";
+
       toggle.textContent = photo.active
         ? "Hide photo"
         : "Publish photo";
@@ -332,7 +539,14 @@ async function loadGallery() {
         }
       });
 
-      card.append(img, title, description, status, toggle);
+      card.append(
+        img,
+        title,
+        description,
+        status,
+        toggle
+      );
+
       list.append(card);
     });
 
@@ -347,22 +561,29 @@ async function loadGallery() {
 const refreshGalleryButton = $("#refreshGallery");
 
 if (refreshGalleryButton) {
-  refreshGalleryButton.addEventListener("click", loadGallery);
+  refreshGalleryButton.addEventListener(
+    "click",
+    loadGallery
+  );
 }
 
 // LOAD APPLICATIONS
 async function loadApplications() {
   const box = $("#applications");
+
   if (!box) return;
 
   box.textContent = "Loading...";
 
   try {
     const rows = await api("/api/admin/applications");
+
     const data = Array.isArray(rows) ? rows : [];
 
     if (!data.length) {
-      box.textContent = "No applications have been received.";
+      box.textContent =
+        "No applications have been received.";
+
       return;
     }
 
@@ -377,11 +598,14 @@ async function loadApplications() {
       "Submitted"
     ].forEach((t) => {
       const th = document.createElement("th");
+
       th.textContent = t;
+
       head.append(th);
     });
 
     const thead = document.createElement("thead");
+
     thead.append(head);
     table.append(thead);
 
@@ -391,7 +615,9 @@ async function loadApplications() {
       const tr = document.createElement("tr");
 
       const c1 = document.createElement("td");
-      c1.textContent = `${a.reference}\n${a.full_name}`;
+
+      c1.textContent =
+        `${a.reference}\n${a.full_name}`;
 
       // CONTACT DETAILS INCLUDING PHONE NUMBER
       const c2 = document.createElement("td");
@@ -407,9 +633,12 @@ async function loadApplications() {
         `${a.message || ""}`;
 
       const c3 = document.createElement("td");
-      c3.textContent = a.job_title || "General profile";
+
+      c3.textContent =
+        a.job_title || "General profile";
 
       const c4 = document.createElement("td");
+
       const sel = document.createElement("select");
 
       [
@@ -422,8 +651,10 @@ async function loadApplications() {
         "Closed"
       ].forEach((s) => {
         const option = document.createElement("option");
+
         option.value = s;
         option.textContent = s;
+
         sel.append(option);
       });
 
@@ -431,13 +662,19 @@ async function loadApplications() {
 
       sel.addEventListener("change", async () => {
         const oldStatus = a.status;
+
         sel.disabled = true;
 
         try {
-          await api(`/api/admin/applications/${a.id}/status`, {
-            method: "PATCH",
-            body: JSON.stringify({ status: sel.value })
-          });
+          await api(
+            `/api/admin/applications/${a.id}/status`,
+            {
+              method: "PATCH",
+              body: JSON.stringify({
+                status: sel.value
+              })
+            }
+          );
 
           a.status = sel.value;
 
@@ -453,14 +690,19 @@ async function loadApplications() {
       c4.append(sel);
 
       const c5 = document.createElement("td");
-      c5.textContent = new Date(a.created_at).toLocaleString();
 
-      [c1, c2, c3, c4, c5].forEach((cell) => tr.append(cell));
+      c5.textContent =
+        new Date(a.created_at).toLocaleString();
+
+      [c1, c2, c3, c4, c5].forEach((cell) => {
+        tr.append(cell);
+      });
 
       body.append(tr);
     });
 
     table.append(body);
+
     box.replaceChildren(table);
 
   } catch (err) {
@@ -472,7 +714,10 @@ async function loadApplications() {
 const loadApplicationsButton = $("#loadApplications");
 
 if (loadApplicationsButton) {
-  loadApplicationsButton.addEventListener("click", loadApplications);
+  loadApplicationsButton.addEventListener(
+    "click",
+    loadApplications
+  );
 }
 
 // START
