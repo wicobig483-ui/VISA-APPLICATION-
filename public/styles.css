@@ -703,3 +703,47 @@ a:focus-visible {
     font-size: 15px;
   }
 }
+
+/* CANADA PHOTO GALLERY */
+
+.canada-gallery {
+  padding: 45px 0;
+  text-align: center;
+}
+
+.canada-gallery h2 {
+  color: var(--navy);
+  font-size: 28px;
+  margin-bottom: 8px;
+}
+
+.canada-gallery p {
+  color: var(--muted);
+  margin-bottom: 25px;
+}
+
+.canada-gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 25px;
+}
+
+.canada-gallery-grid img {
+  display: block;
+  width: 100%;
+  height: 260px;
+  object-fit: cover;
+  border-radius: 12px;
+  box-shadow: 0 5px 18px #182d4320;
+}
+
+@media (max-width: 600px) {
+  .canada-gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .canada-gallery-grid img {
+    height: 230px;
+  }
+}
