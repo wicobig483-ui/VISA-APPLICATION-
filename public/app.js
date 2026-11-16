@@ -47,6 +47,21 @@ async function loadJobs() {
       const card = document.createElement("article");
       card.className = "job";
 
+      // Vacancy photo
+      if (j.image_url) {
+        const img = document.createElement("img");
+        img.src = j.image_url;
+        img.alt = j.title || "Job vacancy photo";
+        img.loading = "lazy";
+        img.className = "job-image";
+
+        img.addEventListener("error", () => {
+          img.remove();
+        });
+
+        card.append(img);
+      }
+
       const h = document.createElement("h3");
       h.textContent = j.title;
 
@@ -149,9 +164,7 @@ $("#applicationForm").addEventListener("submit", async e => {
   const f = new FormData(form);
   const payload = Object.fromEntries(f.entries());
 
-  // Include the applicant's phone number.
   payload.phone = (f.get("phone") || "").toString().trim();
-
   payload.consent = f.get("consent") === "on";
   payload.jobId = payload.jobId || null;
 
@@ -200,3 +213,4 @@ $("#trackForm").addEventListener("submit", async e => {
 
 loadJobs();
 loadGalleryPhotos();
+                              
