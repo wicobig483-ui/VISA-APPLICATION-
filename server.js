@@ -1,3 +1,4 @@
+
 const express = require("express");
 const helmet = require("helmet");
 const session = require("express-session");
@@ -84,7 +85,21 @@ const upload = multer({
 
 app.set("trust proxy", 1);
 
-app.use(helmet());
+// SECURITY HEADERS - ALLOW CLOUDINARY IMAGES
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        "img-src": [
+          "'self'",
+          "data:",
+          "https://res.cloudinary.com"
+        ]
+      }
+    }
+  })
+);
 
 app.use(express.json({
   limit: "30kb"
@@ -476,7 +491,7 @@ app.get(
   }
 );
 
-// UPLOAD IMAGE - FIXED CLOUDINARY URL HANDLING
+// UPLOAD IMAGE
 app.post(
   "/api/admin/uploads",
   adminOnly,
@@ -490,8 +505,6 @@ app.post(
 
     console.log("Cloudinary upload result:", req.file);
 
-    // multer-storage-cloudinary commonly returns the URL in path.
-    // secure_url is checked first when available.
     const imageUrl =
       req.file.secure_url ||
       req.file.path;
