@@ -1,16 +1,49 @@
 
-const STORAGE_KEY = "canadaWorkPermitDemoApplications";
+// =====================================
+// GENERAL HELPERS
+// =====================================
 
-function getApplications() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-  } catch {
-    return [];
+async function api(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      ...(options.body ? { "Content-Type": "application/json" } : {})
+    }
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.error || "Something went wrong. Please try again.");
   }
+
+  return data;
 }
 
-function makeReference() {
-  return "CA-WP-" + Math.floor(100000 + Math.random() * 900000);
+function getField(form, names) {
+  for (const name of names) {
+    const field =
+      form.querySelector(`[name="${name}"]`) ||
+      form.querySelector(`#${name}`);
+
+    if (field) return field;
+  }
+
+  return null;
+}
+
+function getValue(form, names) {
+  const field = getField(form, names);
+  return field ? String(field.value || "").trim() : "";
+}
+
+function showMessage(element, message, error = false) {
+  if (!element) return;
+
+  element.textContent = message;
+  element.classList.toggle("error", error);
 }
 
 // =====================================
@@ -23,25 +56,16 @@ async function loadJobVideos() {
   if (!container) return;
 
   try {
-    const response = await fetch("/api/jobs", {
-      credentials: "same-origin"
-    });
-
-    if (!response.ok) {
-      throw new Error("Could not load job opportunities.");
-    }
-
-    const result = await response.json();
-
-    const jobs = Array.isArray(result)
-      ? result
-      : (result.jobs || []);
-
-    const videoJobs = jobs.filter(job =>
-      job.video_url || job.videoUrl
-    );
+    const jobs = await api("/api/jobs");
 
     container.replaceChildren();
+
+    const videoJobs = jobs.filter(job => {
+      const url = job.video_url || job.videoUrl;
+
+      return typeof url === "string" &&
+        url.startsWith("https://");
+    });
 
     if (videoJobs.length === 0) {
       showEmptyVideos(container);
@@ -61,14 +85,21 @@ async function loadJobVideos() {
       video.playsInline = true;
       video.preload = "metadata";
 
+      video.addEventListener("error", () => {
+        video.replaceWith(
+          document.createTextNode("This video is currently unavailable.")
+        );
+      });
+
       const details = document.createElement("div");
       details.className = "job-video-details";
 
       const title = document.createElement("h3");
-      title.textContent = job.title || job.job_title || "Job Opportunity";
+      title.textContent = job.title || "Job Opportunity";
 
       const location = document.createElement("p");
-      location.textContent = "📍 " + (job.location || job.job_location || "Canada");
+      location.textContent =
+        "📍 " + (job.location || "Canada");
 
       const description = document.createElement("p");
       description.textContent = job.description || "";
@@ -79,11 +110,30 @@ async function loadJobVideos() {
       apply.textContent = "Apply Now →";
 
       apply.addEventListener("click", () => {
-        const jobTitle = document.querySelector('[name="jobTitle"]');
-        const jobLocation = document.querySelector('[name="jobLocation"]');
+        const applicationForm =
+          document.getElementById("applicationForm");
 
-        if (jobTitle) jobTitle.value = title.textContent;
-        if (jobLocation) jobLocation.value = location.textContent.replace("📍 ", "");
+        if (!applicationForm) return;
+
+        const occupation = getField(applicationForm, [
+          "occupation",
+          "jobTitle",
+          "job_title"
+        ]);
+
+        const jobId = getField(applicationForm, [
+          "jobId",
+          "job_id"
+        ]);
+
+        const jobLocation = getField(applicationForm, [
+          "jobLocation",
+          "job_location"
+        ]);
+
+        if (occupation) occupation.value = title.textContent;
+        if (jobId) jobId.value = job.id;
+        if (jobLocation) jobLocation.value = job.location || "Canada";
 
         document.getElementById("apply")?.scrollIntoView({
           behavior: "smooth"
@@ -92,22 +142,23 @@ async function loadJobVideos() {
 
       details.append(title, location);
 
-      if (description.textContent) {
+      if (description.textContent.trim()) {
         details.appendChild(description);
       }
 
       details.appendChild(apply);
+
       card.append(video, details);
       container.appendChild(card);
     });
 
   } catch (error) {
     console.error("Job video loading error:", error);
-    showEmptyVideos(container);
+    showEmptyVideos(container, "Unable to load job videos. Please try again later.");
   }
 }
 
-function showEmptyVideos(container) {
+function showEmptyVideos(container, message) {
   const empty = document.createElement("div");
   empty.className = "job-video-empty";
 
@@ -116,90 +167,207 @@ function showEmptyVideos(container) {
   icon.textContent = "▶";
 
   const heading = document.createElement("h3");
-  heading.textContent = "Job videos coming soon";
+  heading.textContent = "Job videos";
 
-  const message = document.createElement("p");
-  message.textContent =
+  const text = document.createElement("p");
+  text.textContent = message ||
     "New employment opportunity videos will appear here when published.";
 
-  empty.append(icon, heading, message);
+  empty.append(icon, heading, text);
   container.replaceChildren(empty);
 }
 
 // =====================================
-// APPLICATION FORM
+// REAL APPLICATION SUBMISSION
 // =====================================
 
-const applicationForm = document.getElementById("applicationForm");
+const applicationForm =
+  document.getElementById("applicationForm");
 
 if (applicationForm) {
-  applicationForm.addEventListener("submit", (event) => {
+  applicationForm.addEventListener("submit", async event => {
     event.preventDefault();
 
     const form = event.currentTarget;
 
     if (!form.reportValidity()) return;
 
-    const data = Object.fromEntries(
-      new FormData(form).entries()
-    );
-
-    data.documents = new FormData(form).getAll("documents");
-    data.reference = makeReference();
-    data.status = "Received (demo)";
-    data.createdAt = new Date().toISOString();
-
-    const applications = getApplications();
-
-    applications.push(data);
-
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(applications)
+    const submitButton = form.querySelector(
+      '[type="submit"]'
     );
 
     const message = document.getElementById("formMessage");
 
-    message.textContent =
-      `Demo application saved. Your reference number is ${data.reference}. Keep it to check the sample status below.`;
+    const consentField = getField(form, ["consent"]);
 
-    document.getElementById("reference").value = data.reference;
+    const payload = {
+      fullName: getValue(form, ["fullName", "full_name", "name"]),
+      email: getValue(form, ["email"]),
+      phone: getValue(form, ["phone", "phoneNumber"]),
+      country: getValue(form, ["country"]),
+      occupation: getValue(form, [
+        "occupation",
+        "jobTitle",
+        "job_title"
+      ]),
+      experience: getValue(form, ["experience"]),
+      education: getValue(form, ["education"]),
+      cvStatus: getValue(form, [
+        "cvStatus",
+        "cv_status"
+      ]),
+      jobId: getValue(form, ["jobId", "job_id"]) || null,
+      message: getValue(form, ["message"]),
+      consent: Boolean(consentField && consentField.checked)
+    };
 
-    form.reset();
+    if (payload.jobId) {
+      payload.jobId = Number(payload.jobId);
+    }
 
-    document.getElementById("tracking").scrollIntoView({
-      behavior: "smooth"
-    });
+    try {
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = "Submitting...";
+      }
+
+      showMessage(message, "Submitting your application...");
+
+      const result = await api("/api/applications", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+
+      showMessage(
+        message,
+        `Your application has been received successfully. Your reference number is ${result.reference}. Please keep this number for tracking.`
+      );
+
+      form.reset();
+
+      const jobId = getField(form, ["jobId", "job_id"]);
+      if (jobId) jobId.value = "";
+
+      const referenceField =
+        document.getElementById("reference");
+
+      if (referenceField) {
+        referenceField.value = result.reference;
+      }
+
+    } catch (error) {
+      showMessage(message, error.message, true);
+
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Submit Application";
+      }
+    }
   });
 }
 
 // =====================================
-// APPLICATION TRACKING
+// REAL APPLICATION TRACKING
 // =====================================
 
-const trackingForm = document.getElementById("trackingForm");
+const trackingForm =
+  document.getElementById("trackingForm");
 
 if (trackingForm) {
-  trackingForm.addEventListener("submit", (event) => {
+  trackingForm.addEventListener("submit", async event => {
     event.preventDefault();
 
-    const reference = document
-      .getElementById("reference")
-      .value.trim()
-      .toUpperCase();
+    const form = event.currentTarget;
 
-    const match = getApplications().find(
-      app => app.reference === reference
+    if (!form.reportValidity()) return;
+
+    const reference = getValue(form, [
+      "reference",
+      "trackingReference"
+    ]).toUpperCase();
+
+    const email = getValue(form, [
+      "email",
+      "trackingEmail"
+    ]).toLowerCase();
+
+    const resultBox =
+      document.getElementById("trackingResult");
+
+    const submitButton = form.querySelector(
+      '[type="submit"]'
     );
 
-    const result = document.getElementById("trackingResult");
+    try {
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = "Checking...";
+      }
 
-    if (match) {
-      result.textContent =
-        `Status: ${match.status}. Saved on this device as a demonstration record.`;
-    } else {
-      result.textContent =
-        "No demo application found on this device. Check the reference number and try again.";
+      showMessage(resultBox, "Checking your application...");
+
+      const result = await api("/api/track", {
+        method: "POST",
+        body: JSON.stringify({
+          reference,
+          email
+        })
+      });
+
+      resultBox.replaceChildren();
+
+      const heading = document.createElement("h3");
+      heading.textContent = "Application Found";
+
+      const referenceText = document.createElement("p");
+      referenceText.textContent =
+        "Reference: " + result.reference;
+
+      const statusText = document.createElement("p");
+      statusText.textContent =
+        "Status: " + result.status;
+
+      resultBox.append(
+        heading,
+        referenceText,
+        statusText
+      );
+
+      if (result.job_title) {
+        const jobText = document.createElement("p");
+        jobText.textContent =
+          "Position: " + result.job_title;
+
+        resultBox.appendChild(jobText);
+      }
+
+      if (result.created_at) {
+        const dateText = document.createElement("p");
+        dateText.textContent =
+          "Submitted: " +
+          new Date(result.created_at).toLocaleString();
+
+        resultBox.appendChild(dateText);
+      }
+
+      if (result.updated_at) {
+        const updatedText = document.createElement("p");
+        updatedText.textContent =
+          "Last updated: " +
+          new Date(result.updated_at).toLocaleString();
+
+        resultBox.appendChild(updatedText);
+      }
+
+    } catch (error) {
+      showMessage(resultBox, error.message, true);
+
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = "Track Application";
+      }
     }
   });
 }
@@ -219,7 +387,7 @@ if (trackNav) {
 }
 
 // =====================================
-// LOAD HOME PAGE VIDEOS
+// LOAD HOMEPAGE CONTENT
 // =====================================
 
 loadJobVideos();
