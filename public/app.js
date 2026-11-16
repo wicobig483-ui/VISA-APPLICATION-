@@ -149,6 +149,9 @@ $("#applicationForm").addEventListener("submit", async e => {
   const f = new FormData(form);
   const payload = Object.fromEntries(f.entries());
 
+  // Include the applicant's phone number.
+  payload.phone = (f.get("phone") || "").toString().trim();
+
   payload.consent = f.get("consent") === "on";
   payload.jobId = payload.jobId || null;
 
