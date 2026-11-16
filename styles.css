@@ -135,3 +135,161 @@
     flex: 0 0 100%;
   }
 }
+
+/* =====================================
+   FINAL WEBSITE IMPROVEMENTS
+===================================== */
+
+/* Prevent horizontal overflow */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Better form controls */
+.form-grid input,
+.form-grid select,
+.application-wrap textarea,
+.tracking-form input {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 13px;
+  min-height: 44px;
+}
+
+.application-wrap textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 12px;
+  color: var(--ink);
+  outline: none;
+}
+
+.application-wrap textarea:focus {
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px #d84b5915;
+}
+
+/* Disabled buttons */
+.button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Application messages */
+.form-message {
+  margin-top: 15px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.form-message.error {
+  color: #c62828;
+}
+
+/* Tracking results */
+#trackingResult {
+  margin-top: 16px;
+  padding: 0;
+  overflow-wrap: anywhere;
+}
+
+#trackingResult h3 {
+  font: 700 15px Manrope, sans-serif;
+  color: var(--navy);
+  margin: 12px 0;
+}
+
+#trackingResult p {
+  font-size: 12px;
+  margin: 7px 0;
+}
+
+#trackingResult.error {
+  color: #c62828;
+  background: #fff0f0;
+  border-radius: 7px;
+  padding: 12px;
+}
+
+/* Video errors */
+.video-error {
+  padding: 35px 15px;
+  text-align: center;
+  background: #f8f2f2;
+  color: #a52b39;
+  font-size: 12px;
+}
+
+/* Video card improvements */
+.job-video-card {
+  min-width: 0;
+}
+
+.job-video-player {
+  max-height: 520px;
+}
+
+/* Consent alignment */
+.consent {
+  line-height: 1.6;
+}
+
+.consent input {
+  flex: 0 0 auto;
+  margin-top: 4px;
+}
+
+/* Better mobile navigation */
+@media (max-width: 760px) {
+  .site-header {
+    gap: 10px;
+  }
+
+  .site-header nav {
+    gap: 8px;
+  }
+
+  .nav-button {
+    padding: 9px 11px;
+    font-size: 11px;
+  }
+
+  .hero-card {
+    max-width: 100%;
+  }
+
+  .application-wrap {
+    width: 100%;
+  }
+}
+
+/* Small phone screens */
+@media (max-width: 380px) {
+  .brand strong {
+    font-size: 12px;
+  }
+
+  .brand small {
+    font-size: 8px;
+  }
+
+  .nav-button {
+    font-size: 10px;
+    padding: 8px;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+  }
+
+  .application-wrap {
+    padding: 24px 15px;
+  }
+
+  .tracking-card {
+    padding: 22px 15px;
+  }
+}
