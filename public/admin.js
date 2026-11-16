@@ -184,7 +184,6 @@ if (jobForm) {
 
       if (file) {
         msg($("#jobResult"), "Uploading vacancy photo...");
-
         image = await uploadImage(file, "vacancies");
       }
 
@@ -394,12 +393,18 @@ async function loadApplications() {
       const c1 = document.createElement("td");
       c1.textContent = `${a.reference}\n${a.full_name}`;
 
+      // CONTACT DETAILS INCLUDING PHONE NUMBER
       const c2 = document.createElement("td");
+
       c2.textContent =
-        `${a.email}\n${a.country}\n${a.occupation}\n` +
-        `Experience: ${a.experience}\n` +
-        `Education: ${a.education}\n` +
-        `CV: ${a.cv_status}\n${a.message || ""}`;
+        `Phone: ${a.phone || "Not provided"}\n` +
+        `Email: ${a.email || "Not provided"}\n` +
+        `Country: ${a.country || "Not provided"}\n` +
+        `Occupation: ${a.occupation || "Not provided"}\n` +
+        `Experience: ${a.experience || "Not provided"}\n` +
+        `Education: ${a.education || "Not provided"}\n` +
+        `CV: ${a.cv_status || "Not provided"}\n` +
+        `${a.message || ""}`;
 
       const c3 = document.createElement("td");
       c3.textContent = a.job_title || "General profile";
