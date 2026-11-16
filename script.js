@@ -4,19 +4,29 @@
 // =====================================
 
 async function api(url, options = {}) {
+  const headers = {
+    ...(options.headers || {})
+  };
+
+  if (
+    options.body &&
+    typeof options.body === "string"
+  ) {
+    headers["Content-Type"] = "application/json";
+  }
+
   const response = await fetch(url, {
     credentials: "same-origin",
     ...options,
-    headers: {
-      ...(options.headers || {}),
-      ...(options.body ? { "Content-Type": "application/json" } : {})
-    }
+    headers
   });
 
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {
-    throw new Error(data.error || "Something went wrong. Please try again.");
+    throw new Error(
+      data.error || "Something went wrong. Please try again."
+    );
   }
 
   return data;
@@ -36,7 +46,10 @@ function getField(form, names) {
 
 function getValue(form, names) {
   const field = getField(form, names);
-  return field ? String(field.value || "").trim() : "";
+
+  return field
+    ? String(field.value || "").trim()
+    : "";
 }
 
 function showMessage(element, message, error = false) {
@@ -63,8 +76,15 @@ async function loadJobVideos() {
     const videoJobs = jobs.filter(job => {
       const url = job.video_url || job.videoUrl;
 
-      return typeof url === "string" &&
-        url.startsWith("https://");
+      if (typeof url !== "string") return false;
+
+      try {
+        const parsedUrl = new URL(url);
+
+        return parsedUrl.protocol === "https:";
+      } catch {
+        return false;
+      }
     });
 
     if (videoJobs.length === 0) {
@@ -86,9 +106,12 @@ async function loadJobVideos() {
       video.preload = "metadata";
 
       video.addEventListener("error", () => {
-        video.replaceWith(
-          document.createTextNode("This video is currently unavailable.")
-        );
+        const unavailable = document.createElement("p");
+        unavailable.className = "video-error";
+        unavailable.textContent =
+          "This video is currently unavailable.";
+
+        video.replaceWith(unavailable);
       });
 
       const details = document.createElement("div");
@@ -126,14 +149,13 @@ async function loadJobVideos() {
           "job_id"
         ]);
 
-        const jobLocation = getField(applicationForm, [
-          "jobLocation",
-          "job_location"
-        ]);
+        if (occupation) {
+          occupation.value = job.title || "";
+        }
 
-        if (occupation) occupation.value = title.textContent;
-        if (jobId) jobId.value = job.id;
-        if (jobLocation) jobLocation.value = job.location || "Canada";
+        if (jobId) {
+          jobId.value = job.id || "";
+        }
 
         document.getElementById("apply")?.scrollIntoView({
           behavior: "smooth"
@@ -154,7 +176,11 @@ async function loadJobVideos() {
 
   } catch (error) {
     console.error("Job video loading error:", error);
-    showEmptyVideos(container, "Unable to load job videos. Please try again later.");
+
+    showEmptyVideos(
+      container,
+      "Unable to load job videos. Please try again later."
+    );
   }
 }
 
@@ -174,11 +200,12 @@ function showEmptyVideos(container, message) {
     "New employment opportunity videos will appear here when published.";
 
   empty.append(icon, heading, text);
+
   container.replaceChildren(empty);
 }
 
 // =====================================
-// REAL APPLICATION SUBMISSION
+// APPLICATION SUBMISSION
 // =====================================
 
 const applicationForm =
@@ -200,29 +227,87 @@ if (applicationForm) {
 
     const consentField = getField(form, ["consent"]);
 
+    const rawJobId = getValue(form, [
+      "jobId",
+      "job_id"
+    ]);
+
+    const jobId = rawJobId
+      ? Number(rawJobId)
+      : null;
+
+    if (
+      jobId !== null &&
+      (!Number.isSafeInteger(jobId) || jobId < 1)
+    ) {
+      showMessage(
+        message,
+        "The selected vacancy is invalid. Please select the vacancy again.",
+        true
+      );
+
+      return;
+    }
+
     const payload = {
-      fullName: getValue(form, ["fullName", "full_name", "name"]),
-      email: getValue(form, ["email"]),
-      phone: getValue(form, ["phone", "phoneNumber"]),
-      country: getValue(form, ["country"]),
+      fullName: getValue(form, [
+        "fullName",
+        "full_name",
+        "name"
+      ]),
+
+      email: getValue(form, [
+        "email"
+      ]),
+
+      phone: getValue(form, [
+        "phone",
+        "phoneNumber"
+      ]),
+
+      country: getValue(form, [
+        "country"
+      ]),
+
       occupation: getValue(form, [
         "occupation",
         "jobTitle",
         "job_title"
       ]),
-      experience: getValue(form, ["experience"]),
-      education: getValue(form, ["education"]),
+
+      experience: getValue(form, [
+        "experience"
+      ]),
+
+      education: getValue(form, [
+        "education"
+      ]),
+
       cvStatus: getValue(form, [
         "cvStatus",
         "cv_status"
       ]),
-      jobId: getValue(form, ["jobId", "job_id"]) || null,
-      message: getValue(form, ["message"]),
-      consent: Boolean(consentField && consentField.checked)
+
+      jobId,
+
+      message: getValue(form, [
+        "message"
+      ]),
+
+      // The server requires a Boolean value.
+      consent: Boolean(
+        consentField && consentField.checked
+      )
     };
 
-    if (payload.jobId) {
-      payload.jobId = Number(payload.jobId);
+    if (!payload.consent) {
+      showMessage(
+        message,
+        "Please confirm the consent statement before submitting.",
+        true
+      );
+
+      return;
     }
 
     try {
@@ -231,23 +316,28 @@ if (applicationForm) {
         submitButton.textContent = "Submitting...";
       }
 
-      showMessage(message, "Submitting your application...");
+      showMessage(
+        message,
+        "Submitting your application..."
+      );
 
       const result = await api("/api/applications", {
         method: "POST",
         body: JSON.stringify(payload)
       });
 
+      if (!result.reference) {
+        throw new Error(
+          "Your application was submitted, but no reference number was returned. Please contact the recruitment team."
+        );
+      }
+
       showMessage(
         message,
         `Your application has been received successfully. Your reference number is ${result.reference}. Please keep this number for tracking.`
       );
 
-      form.reset();
-
-      const jobId = getField(form, ["jobId", "job_id"]);
-      if (jobId) jobId.value = "";
-
+      // Save the reference in the tracking form.
       const referenceField =
         document.getElementById("reference");
 
@@ -255,20 +345,39 @@ if (applicationForm) {
         referenceField.value = result.reference;
       }
 
+      // Reset the application form after success.
+      form.reset();
+
+      const jobIdField = getField(form, [
+        "jobId",
+        "job_id"
+      ]);
+
+      if (jobIdField) {
+        jobIdField.value = "";
+      }
+
     } catch (error) {
-      showMessage(message, error.message, true);
+      console.error("Application submission error:", error);
+
+      showMessage(
+        message,
+        error.message,
+        true
+      );
 
     } finally {
       if (submitButton) {
         submitButton.disabled = false;
-        submitButton.textContent = "Submit Application";
+        submitButton.innerHTML =
+          'Submit Application <span>→</span>';
       }
     }
   });
 }
 
 // =====================================
-// REAL APPLICATION TRACKING
+// APPLICATION TRACKING
 // =====================================
 
 const trackingForm =
@@ -305,7 +414,10 @@ if (trackingForm) {
         submitButton.textContent = "Checking...";
       }
 
-      showMessage(resultBox, "Checking your application...");
+      showMessage(
+        resultBox,
+        "Checking your application..."
+      );
 
       const result = await api("/api/track", {
         method: "POST",
@@ -336,6 +448,7 @@ if (trackingForm) {
 
       if (result.job_title) {
         const jobText = document.createElement("p");
+
         jobText.textContent =
           "Position: " + result.job_title;
 
@@ -344,6 +457,7 @@ if (trackingForm) {
 
       if (result.created_at) {
         const dateText = document.createElement("p");
+
         dateText.textContent =
           "Submitted: " +
           new Date(result.created_at).toLocaleString();
@@ -353,6 +467,7 @@ if (trackingForm) {
 
       if (result.updated_at) {
         const updatedText = document.createElement("p");
+
         updatedText.textContent =
           "Last updated: " +
           new Date(result.updated_at).toLocaleString();
@@ -360,8 +475,16 @@ if (trackingForm) {
         resultBox.appendChild(updatedText);
       }
 
+      resultBox.classList.remove("error");
+
     } catch (error) {
-      showMessage(resultBox, error.message, true);
+      console.error("Application tracking error:", error);
+
+      showMessage(
+        resultBox,
+        error.message,
+        true
+      );
 
     } finally {
       if (submitButton) {
