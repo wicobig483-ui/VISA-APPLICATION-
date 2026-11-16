@@ -51,10 +51,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
-// CLOUDINARY STORAGE
+// IMAGE STORAGE
 const storage = new CloudinaryStorage({
   cloudinary,
-  params: async (_req, _file) => ({
+  params: async () => ({
     folder: "canada-recruitment",
     resource_type: "image",
     allowed_formats: ["jpg", "jpeg", "png", "webp"]
@@ -83,18 +83,57 @@ const upload = multer({
   }
 });
 
+// VIDEO STORAGE
+const videoStorage = new CloudinaryStorage({
+  cloudinary,
+  params: async () => ({
+    folder: "canada-recruitment/videos",
+    resource_type: "video",
+    allowed_formats: ["mp4", "mov", "webm"]
+  })
+});
+
+const videoUpload = multer({
+  storage: videoStorage,
+  limits: {
+    fileSize: 100 * 1024 * 1024
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowed = [
+      "video/mp4",
+      "video/quicktime",
+      "video/webm"
+    ];
+
+    if (!allowed.includes(file.mimetype)) {
+      return cb(
+        new Error("Only MP4, MOV and WEBM videos are allowed.")
+      );
+    }
+
+    cb(null, true);
+  }
+});
+
 app.set("trust proxy", 1);
 
-// SECURITY HEADERS - ALLOW CLOUDINARY IMAGES
+// SECURITY HEADERS
 app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+
         "img-src": [
           "'self'",
           "data:",
           "https://res.cloudinary.com"
+        ],
+
+        "media-src": [
+          "'self'",
+          "https://res.cloudinary.com",
+          "blob:"
         ]
       }
     }
@@ -151,6 +190,8 @@ async function initializeDatabase() {
       employment_type TEXT NOT NULL DEFAULT 'Full-time',
       image_url TEXT,
       image_public_id TEXT,
+      video_url TEXT,
+      video_public_id TEXT,
       active BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -160,6 +201,12 @@ async function initializeDatabase() {
 
     ALTER TABLE jobs
       ADD COLUMN IF NOT EXISTS image_public_id TEXT;
+
+    ALTER TABLE jobs
+      ADD COLUMN IF NOT EXISTS video_url TEXT;
+
+    ALTER TABLE jobs
+      ADD COLUMN IF NOT EXISTS video_public_id TEXT;
 
     CREATE TABLE IF NOT EXISTS applications (
       id BIGSERIAL PRIMARY KEY,
@@ -246,7 +293,9 @@ app.get("/api/jobs", async (_req, res) => {
         description,
         requirements,
         employment_type,
-        image_url
+        image_url,
+        video_url,
+        video_public_id
       FROM jobs
       WHERE active = TRUE
       ORDER BY created_at DESC
@@ -255,6 +304,7 @@ app.get("/api/jobs", async (_req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
+
     res.status(500).json({
       error: "Unable to load vacancies."
     });
@@ -279,6 +329,7 @@ app.get("/api/gallery", async (_req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error(err);
+
     res.status(500).json({
       error: "Unable to load gallery."
     });
@@ -522,8 +573,6 @@ app.post(
       });
     }
 
-    console.log("Cloudinary upload result:", req.file);
-
     const imageUrl =
       req.file.secure_url ||
       req.file.path;
@@ -542,6 +591,41 @@ app.post(
       image: {
         url: imageUrl,
         publicId: imagePublicId
+      }
+    });
+  }
+);
+
+// UPLOAD JOB VIDEO
+app.post(
+  "/api/admin/video-uploads",
+  adminOnly,
+  videoUpload.single("video"),
+  (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({
+        error: "Please select a video."
+      });
+    }
+
+    const videoUrl =
+      req.file.secure_url ||
+      req.file.path;
+
+    const videoPublicId =
+      req.file.public_id ||
+      req.file.filename;
+
+    if (!videoUrl) {
+      return res.status(500).json({
+        error: "Cloudinary did not return a video URL."
+      });
+    }
+
+    res.status(201).json({
+      video: {
+        url: videoUrl,
+        publicId: videoPublicId
       }
     });
   }
@@ -797,6 +881,12 @@ app.post(
     const imagePublicId =
       clean(req.body.imagePublicId, 500);
 
+    const videoUrl =
+      clean(req.body.videoUrl, 2000);
+
+    const videoPublicId =
+      clean(req.body.videoPublicId, 500);
+
     if (!title || !location || !description) {
       return res.status(400).json({
         error:
@@ -814,10 +904,12 @@ app.post(
           requirements,
           employment_type,
           image_url,
-          image_public_id
+          image_public_id,
+          video_url,
+          video_public_id
         )
         VALUES
-        ($1,$2,$3,$4,$5,$6,$7)
+        ($1,$2,$3,$4,$5,$6,$7,$8,$9)
         RETURNING *`,
         [
           title,
@@ -826,7 +918,9 @@ app.post(
           requirements,
           employmentType,
           imageUrl || null,
-          imagePublicId || null
+          imagePublicId || null,
+          videoUrl || null,
+          videoPublicId || null
         ]
       );
 
@@ -882,11 +976,11 @@ app.patch(
 );
 
 // ERROR HANDLING
-app.use((err, _req, res, next) => {
+app.use((err, _req, res, _next) => {
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
-        error: "Image must be 5MB or smaller."
+        error: "The uploaded file exceeds the allowed size limit."
       });
     }
 
@@ -903,11 +997,13 @@ app.use((err, _req, res, next) => {
     });
   }
 
-  next();
+  res.status(500).json({
+    error: "An unexpected server error occurred."
+  });
 });
 
 // STATIC FILES
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 app.get("*", (_req, res) => {
   res.sendFile(
