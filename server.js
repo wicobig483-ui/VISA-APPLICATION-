@@ -140,6 +140,7 @@ app.use(
   })
 );
 
+// REQUEST PARSING
 app.use(express.json({
   limit: "30kb"
 }));
@@ -302,6 +303,7 @@ app.get("/api/jobs", async (_req, res) => {
     `);
 
     res.json(result.rows);
+
   } catch (err) {
     console.error(err);
 
@@ -327,6 +329,7 @@ app.get("/api/gallery", async (_req, res) => {
     `);
 
     res.json(result.rows);
+
   } catch (err) {
     console.error(err);
 
@@ -432,8 +435,7 @@ app.post("/api/applications", async (req, res) => {
     );
 
     res.status(201).json({
-      message:
-        "Your recruitment application has been received.",
+      message: "Your recruitment application has been received.",
       reference
     });
 
@@ -441,8 +443,7 @@ app.post("/api/applications", async (req, res) => {
     console.error(err);
 
     res.status(500).json({
-      error:
-        "Unable to submit your application. Please try again."
+      error: "Unable to submit your application. Please try again."
     });
   }
 });
@@ -458,8 +459,7 @@ app.post("/api/track", async (req, res) => {
 
     if (!reference || !validEmail(email)) {
       return res.status(400).json({
-        error:
-          "Enter a valid reference number and email address."
+        error: "Enter a valid reference number and email address."
       });
     }
 
@@ -530,8 +530,16 @@ app.post(
 
       req.session.isAdmin = true;
 
-      res.json({
-        message: "Signed in."
+      req.session.save((saveError) => {
+        if (saveError) {
+          return res.status(500).json({
+            error: "Could not save admin session."
+          });
+        }
+
+        res.json({
+          message: "Signed in."
+        });
       });
     });
   }
@@ -542,7 +550,15 @@ app.post(
   "/api/admin/logout",
   adminOnly,
   (req, res) => {
-    req.session.destroy(() => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({
+          error: "Could not sign out."
+        });
+      }
+
+      res.clearCookie("recruitment.sid");
+
       res.json({
         message: "Signed out."
       });
@@ -638,19 +654,13 @@ app.post(
   async (req, res) => {
     try {
       const title = clean(req.body.title, 150);
-      const description =
-        clean(req.body.description, 1000);
-
-      const imageUrl =
-        clean(req.body.imageUrl, 2000);
-
-      const imagePublicId =
-        clean(req.body.imagePublicId, 500);
+      const description = clean(req.body.description, 1000);
+      const imageUrl = clean(req.body.imageUrl, 2000);
+      const imagePublicId = clean(req.body.imagePublicId, 500);
 
       if (!title || !imageUrl) {
         return res.status(400).json({
-          error:
-            "Photo title and image are required."
+          error: "Photo title and image are required."
         });
       }
 
@@ -709,8 +719,7 @@ app.get(
       console.error(err);
 
       res.status(500).json({
-        error:
-          "Unable to load gallery photos."
+        error: "Unable to load gallery photos."
       });
     }
   }
@@ -722,6 +731,14 @@ app.patch(
   adminOnly,
   async (req, res) => {
     try {
+      const id = Number(req.params.id);
+
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({
+          error: "Invalid gallery photo ID."
+        });
+      }
+
       const active = req.body.active === true;
 
       const result = await pool.query(
@@ -729,10 +746,7 @@ app.patch(
         SET active = $1
         WHERE id = $2
         RETURNING id, active`,
-        [
-          active,
-          Number(req.params.id)
-        ]
+        [active, id]
       );
 
       if (!result.rowCount) {
@@ -747,8 +761,7 @@ app.patch(
       console.error(err);
 
       res.status(500).json({
-        error:
-          "Unable to update gallery photo."
+        error: "Unable to update gallery photo."
       });
     }
   }
@@ -789,8 +802,7 @@ app.get(
       console.error(err);
 
       res.status(500).json({
-        error:
-          "Unable to load applications."
+        error: "Unable to load applications."
       });
     }
   }
@@ -801,8 +813,7 @@ app.patch(
   "/api/admin/applications/:id/status",
   adminOnly,
   async (req, res) => {
-    const status =
-      clean(req.body.status, 40);
+    const status = clean(req.body.status, 40);
 
     const allowed = [
       "Received",
@@ -821,16 +832,21 @@ app.patch(
     }
 
     try {
+      const id = Number(req.params.id);
+
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({
+          error: "Invalid application ID."
+        });
+      }
+
       const result = await pool.query(
         `UPDATE applications
         SET status = $1,
         updated_at = NOW()
         WHERE id = $2
         RETURNING id, reference, status`,
-        [
-          status,
-          Number(req.params.id)
-        ]
+        [status, id]
       );
 
       if (!result.rowCount) {
@@ -845,8 +861,7 @@ app.patch(
       console.error(err);
 
       res.status(500).json({
-        error:
-          "Unable to update status."
+        error: "Unable to update status."
       });
     }
   }
@@ -857,40 +872,24 @@ app.post(
   "/api/admin/jobs",
   adminOnly,
   async (req, res) => {
-    const title =
-      clean(req.body.title, 150);
+    const title = clean(req.body.title, 150);
+    const location = clean(req.body.location, 120);
+    const description = clean(req.body.description, 3000);
+    const requirements = clean(req.body.requirements, 3000);
 
-    const location =
-      clean(req.body.location, 120);
+    const employmentType = clean(
+      req.body.employmentType || "Full-time",
+      60
+    );
 
-    const description =
-      clean(req.body.description, 3000);
-
-    const requirements =
-      clean(req.body.requirements, 3000);
-
-    const employmentType =
-      clean(
-        req.body.employmentType || "Full-time",
-        60
-      );
-
-    const imageUrl =
-      clean(req.body.imageUrl, 2000);
-
-    const imagePublicId =
-      clean(req.body.imagePublicId, 500);
-
-    const videoUrl =
-      clean(req.body.videoUrl, 2000);
-
-    const videoPublicId =
-      clean(req.body.videoPublicId, 500);
+    const imageUrl = clean(req.body.imageUrl, 2000);
+    const imagePublicId = clean(req.body.imagePublicId, 500);
+    const videoUrl = clean(req.body.videoUrl, 2000);
+    const videoPublicId = clean(req.body.videoPublicId, 500);
 
     if (!title || !location || !description) {
       return res.status(400).json({
-        error:
-          "Title, location and description are required."
+        error: "Title, location and description are required."
       });
     }
 
@@ -942,18 +941,22 @@ app.patch(
   adminOnly,
   async (req, res) => {
     try {
-      const active =
-        req.body.active === true;
+      const id = Number(req.params.id);
+
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({
+          error: "Invalid vacancy ID."
+        });
+      }
+
+      const active = req.body.active === true;
 
       const result = await pool.query(
         `UPDATE jobs
         SET active = $1
         WHERE id = $2
         RETURNING id, active`,
-        [
-          active,
-          Number(req.params.id)
-        ]
+        [active, id]
       );
 
       if (!result.rowCount) {
@@ -968,15 +971,34 @@ app.patch(
       console.error(err);
 
       res.status(500).json({
-        error:
-          "Unable to update vacancy."
+        error: "Unable to update vacancy."
       });
     }
   }
 );
 
+// STATIC FILES
+app.use(express.static(path.join(__dirname, "public")));
+
+// NOT FOUND
+app.use((req, res) => {
+  if (req.path.startsWith("/api/")) {
+    return res.status(404).json({
+      error: "API endpoint not found."
+    });
+  }
+
+  res.status(404).send("Page not found.");
+});
+
 // ERROR HANDLING
 app.use((err, _req, res, _next) => {
+  console.error("Server error:", err);
+
+  if (res.headersSent) {
+    return;
+  }
+
   if (err instanceof multer.MulterError) {
     if (err.code === "LIMIT_FILE_SIZE") {
       return res.status(400).json({
@@ -989,30 +1011,22 @@ app.use((err, _req, res, _next) => {
     });
   }
 
-  if (err) {
-    console.error(err);
-
+  // File type validation errors
+  if (
+    err.message &&
+    (
+      err.message.includes("Only JPG") ||
+      err.message.includes("Only MP4")
+    )
+  ) {
     return res.status(400).json({
-      error: err.message || "Upload failed."
+      error: err.message
     });
   }
 
-  res.status(500).json({
+  return res.status(500).json({
     error: "An unexpected server error occurred."
   });
-});
-
-// STATIC FILES
-app.use(express.static(path.join(__dirname, "public")));
-
-app.get("*", (_req, res) => {
-  res.sendFile(
-    path.join(
-      __dirname,
-      "public",
-      "index.html"
-    )
-  );
 });
 
 // START SERVER
@@ -1022,7 +1036,7 @@ initializeDatabase()
 
     app.listen(port, () => {
       console.log(
-        `Recruitment portal listening on ${port}`
+        `Recruitment portal listening on port ${port}`
       );
     });
   })
