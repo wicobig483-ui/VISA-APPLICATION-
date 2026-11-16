@@ -166,6 +166,7 @@ async function initializeDatabase() {
       reference TEXT UNIQUE NOT NULL,
       full_name TEXT NOT NULL,
       email TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
       country TEXT NOT NULL,
       occupation TEXT NOT NULL,
       experience TEXT NOT NULL,
@@ -177,6 +178,9 @@ async function initializeDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    ALTER TABLE applications
+      ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT '';
 
     CREATE TABLE IF NOT EXISTS gallery_photos (
       id BIGSERIAL PRIMARY KEY,
@@ -209,6 +213,16 @@ function clean(value, max = 500) {
 
 function validEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+function validPhone(phone) {
+  const digits = phone.replace(/\D/g, "");
+
+  return (
+    /^[+]?[0-9\s().-]+$/.test(phone) &&
+    digits.length >= 7 &&
+    digits.length <= 15
+  );
 }
 
 function adminOnly(req, res, next) {
@@ -276,6 +290,7 @@ app.post("/api/applications", async (req, res) => {
   try {
     const fullName = clean(req.body.fullName, 120);
     const email = clean(req.body.email, 254).toLowerCase();
+    const phone = clean(req.body.phone, 25);
     const country = clean(req.body.country, 100);
     const occupation = clean(req.body.occupation, 120);
     const experience = clean(req.body.experience, 80);
@@ -292,6 +307,8 @@ app.post("/api/applications", async (req, res) => {
     if (
       !fullName ||
       !validEmail(email) ||
+      !phone ||
+      !validPhone(phone) ||
       !country ||
       !occupation ||
       !experience ||
@@ -301,7 +318,7 @@ app.post("/api/applications", async (req, res) => {
     ) {
       return res.status(400).json({
         error:
-          "Complete all required fields and confirm the consent statement."
+          "Complete all required fields, enter a valid phone number, and confirm the consent statement."
       });
     }
 
@@ -337,6 +354,7 @@ app.post("/api/applications", async (req, res) => {
         reference,
         full_name,
         email,
+        phone,
         country,
         occupation,
         experience,
@@ -346,11 +364,12 @@ app.post("/api/applications", async (req, res) => {
         message
       )
       VALUES
-      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+      ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
         reference,
         fullName,
         email,
+        phone,
         country,
         occupation,
         experience,
@@ -663,6 +682,7 @@ app.get(
           a.reference,
           a.full_name,
           a.email,
+          a.phone,
           a.country,
           a.occupation,
           a.experience,
