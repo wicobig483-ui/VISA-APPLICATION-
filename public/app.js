@@ -42,14 +42,19 @@ async function api(url, options = {}) {
 function createElement(tag, className, text = "") {
   const element = document.createElement(tag);
 
-  if (className) element.className = className;
-  if (text) element.textContent = text;
+  if (className) {
+    element.className = className;
+  }
+
+  if (text) {
+    element.textContent = text;
+  }
 
   return element;
 }
 
 /* =====================================
-   LOAD JOB VACANCIES
+   LOAD JOB VACANCIES AND VIDEOS
 ===================================== */
 
 async function loadJobs() {
@@ -65,6 +70,7 @@ async function loadJobs() {
 
     box.replaceChildren();
 
+    // CORRECTED LAYOUT CLASS
     box.classList.remove("compact-jobs-grid");
     box.classList.add("job-list-layout");
 
@@ -81,18 +87,16 @@ async function loadJobs() {
 
     jobs.forEach((job) => {
 
+      // CORRECTED JOB CARD CLASS
       const card = createElement(
         "article",
         "job job-row-card"
       );
 
-      /* MEDIA COLUMN */
+      // MEDIA CONTAINER
+      const media = createElement("div", "job-media");
 
-      const media = createElement(
-        "div",
-        "job-media"
-      );
-
+      // VACANCY PHOTO
       if (job.image_url) {
         const img = document.createElement("img");
 
@@ -101,11 +105,14 @@ async function loadJobs() {
         img.loading = "lazy";
         img.className = "job-image";
 
-        img.addEventListener("error", () => img.remove());
+        img.addEventListener("error", () => {
+          img.remove();
+        });
 
         media.append(img);
       }
 
+      // JOB VIDEO
       if (job.video_url) {
         try {
           const videoUrl = new URL(job.video_url);
@@ -143,37 +150,39 @@ async function loadJobs() {
         }
       }
 
+      // ADD MEDIA ONLY WHEN AVAILABLE
       if (media.children.length) {
         card.append(media);
       }
 
-      /* DESCRIPTION COLUMN */
-
+      // JOB INFORMATION CONTAINER
       const details = createElement(
         "div",
         "job-details"
       );
 
+      // JOB TITLE
       const heading = createElement(
         "h3",
         "job-title",
         job.title || "Job opportunity"
       );
 
+      // LOCATION AND EMPLOYMENT TYPE
       const location = createElement(
         "p",
         "muted job-location",
-        [job.location, job.employment_type]
-          .filter(Boolean)
-          .join(" · ")
+        `${job.location || ""} · ${job.employment_type || ""}`
       );
 
+      // DESCRIPTION
       const description = createElement(
         "p",
         "job-description",
         job.description || ""
       );
 
+      // REQUIREMENTS
       const requirements = createElement(
         "p",
         "job-requirements",
@@ -182,6 +191,7 @@ async function loadJobs() {
           : ""
       );
 
+      // APPLY BUTTON
       const applyButton = document.createElement("button");
 
       applyButton.type = "button";
@@ -214,6 +224,7 @@ async function loadJobs() {
         }
       });
 
+      // ADD JOB DETAILS
       details.append(
         heading,
         location,
@@ -225,14 +236,14 @@ async function loadJobs() {
       card.append(details);
       box.append(card);
 
-      /* APPLICATION DROPDOWN */
-
+      // APPLICATION DROPDOWN
       if (select && select.tagName === "SELECT") {
         const option = document.createElement("option");
 
         option.value = String(job.id);
+
         option.textContent =
-          `${job.title} — ${job.location || ""}`;
+          `${job.title || "Job opportunity"} — ${job.location || ""}`;
 
         select.append(option);
       }
@@ -241,6 +252,7 @@ async function loadJobs() {
 
   } catch (error) {
     box.textContent = error.message;
+
     console.error("Jobs loading error:", error);
   }
 }
@@ -296,12 +308,14 @@ async function loadGalleryPhotos() {
       );
 
       card.append(img, title, description);
-      gallery.append(card);
 
+      gallery.append(card);
     });
 
   } catch (error) {
-    gallery.textContent = "Unable to load gallery photos.";
+    gallery.textContent =
+      "Unable to load gallery photos.";
+
     console.error("Gallery error:", error);
   }
 }
@@ -313,7 +327,10 @@ async function loadGalleryPhotos() {
 const reloadJobsButton = $("#reloadJobs");
 
 if (reloadJobsButton) {
-  reloadJobsButton.addEventListener("click", loadJobs);
+  reloadJobsButton.addEventListener(
+    "click",
+    loadJobs
+  );
 }
 
 /* =====================================
@@ -323,58 +340,85 @@ if (reloadJobsButton) {
 const applicationForm = $("#applicationForm");
 
 if (applicationForm) {
-  applicationForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
 
-    const form = event.currentTarget;
+  applicationForm.addEventListener(
+    "submit",
+    async (event) => {
 
-    const result =
-      $("#formMessage") || $("#applyResult");
+      event.preventDefault();
 
-    const formData = new FormData(form);
-    const payload = Object.fromEntries(formData.entries());
+      const form = event.currentTarget;
 
-    const consentField = form.querySelector(
-      '[name="consent"]'
-    );
+      const result =
+        $("#formMessage") || $("#applyResult");
 
-    payload.phone = String(payload.phone || "").trim();
+      const formData = new FormData(form);
 
-    payload.consent = Boolean(
-      consentField && consentField.checked
-    );
-
-    const jobId = Number(payload.jobId);
-
-    payload.jobId =
-      Number.isSafeInteger(jobId) && jobId > 0
-        ? jobId
-        : null;
-
-    const button = form.querySelector('[type="submit"]');
-
-    if (button) button.disabled = true;
-
-    try {
-      const data = await api("/api/applications", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
-
-      show(
-        result,
-        `${data.message} Your tracking reference is ${data.reference}. Save it and use the same email address in the tracking section.`
+      const payload = Object.fromEntries(
+        formData.entries()
       );
 
-      form.reset();
+      const consentField = form.querySelector(
+        '[name="consent"]'
+      );
 
-    } catch (error) {
-      show(result, error.message, true);
+      payload.phone = String(
+        payload.phone || ""
+      ).trim();
 
-    } finally {
-      if (button) button.disabled = false;
+      payload.consent = Boolean(
+        consentField && consentField.checked
+      );
+
+      const jobId = Number(payload.jobId);
+
+      payload.jobId =
+        Number.isSafeInteger(jobId) && jobId > 0
+          ? jobId
+          : null;
+
+      const button = form.querySelector(
+        '[type="submit"]'
+      );
+
+      if (button) {
+        button.disabled = true;
+      }
+
+      try {
+
+        const data = await api(
+          "/api/applications",
+          {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }
+        );
+
+        show(
+          result,
+          `${data.message} Your tracking reference is ${data.reference}. Save it and use the same email address in the tracking section.`
+        );
+
+        form.reset();
+
+      } catch (error) {
+
+        show(
+          result,
+          error.message,
+          true
+        );
+
+      } finally {
+
+        if (button) {
+          button.disabled = false;
+        }
+
+      }
     }
-  });
+  );
 }
 
 /* =====================================
@@ -385,35 +429,50 @@ const trackingForm =
   $("#trackingForm") || $("#trackForm");
 
 if (trackingForm) {
-  trackingForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
 
-    const form = event.currentTarget;
+  trackingForm.addEventListener(
+    "submit",
+    async (event) => {
 
-    const result =
-      $("#trackingResult") || $("#trackResult");
+      event.preventDefault();
 
-    const formData = new FormData(form);
+      const form = event.currentTarget;
 
-    const payload = Object.fromEntries(
-      formData.entries()
-    );
+      const result =
+        $("#trackingResult") || $("#trackResult");
 
-    try {
-      const data = await api("/api/track", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
+      const formData = new FormData(form);
 
-      show(
-        result,
-        `Reference: ${data.reference} · Status: ${data.status} · Vacancy: ${data.job_title || "General profile"} · Last updated: ${new Date(data.updated_at).toLocaleString()}`
+      const payload = Object.fromEntries(
+        formData.entries()
       );
 
-    } catch (error) {
-      show(result, error.message, true);
+      try {
+
+        const data = await api(
+          "/api/track",
+          {
+            method: "POST",
+            body: JSON.stringify(payload)
+          }
+        );
+
+        show(
+          result,
+          `Reference: ${data.reference} · Status: ${data.status} · Vacancy: ${data.job_title || "General profile"} · Last updated: ${new Date(data.updated_at).toLocaleString()}`
+        );
+
+      } catch (error) {
+
+        show(
+          result,
+          error.message,
+          true
+        );
+
+      }
     }
-  });
+  );
 }
 
 /* =====================================
@@ -422,3 +481,4 @@ if (trackingForm) {
 
 loadJobs();
 loadGalleryPhotos();
+                 
