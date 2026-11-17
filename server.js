@@ -236,6 +236,7 @@ async function initializeDatabase() {
     );
 
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT '';
+    ALTER TABLE applications ADD COLUMN IF NOT EXISTS application_received_email_sent_at TIMESTAMPTZ;
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS under_review_email_sent_at TIMESTAMPTZ;
 
     CREATE TABLE IF NOT EXISTS gallery_photos (
@@ -398,20 +399,41 @@ app.post("/api/applications", async (req, res) => {
     const reference =
       "CA-" + crypto.randomBytes(6).toString("hex").toUpperCase();
 
-    await pool.query(
+    const saved = await pool.query(
       `INSERT INTO applications
        (reference, full_name, email, phone, country, occupation,
         experience, education, cv_status, job_id, message)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       RETURNING id, reference, full_name, email`,
       [
         reference, fullName, email, phone, country, occupation,
         experience, education, cvStatus, jobId, message
       ]
     );
 
+    const application = saved.rows[0];
+    let emailSent = false;
+    let emailMessage = "Application saved, but the confirmation email could not be sent.";
+
+    try {
+      await sendApplicationReceivedEmail(application);
+      await pool.query(
+        `UPDATE applications
+         SET application_received_email_sent_at = NOW()
+         WHERE id = $1`,
+        [application.id]
+      );
+      emailSent = true;
+      emailMessage = "Application confirmation email sent.";
+    } catch (emailError) {
+      console.error("Application confirmation email failed:", emailError);
+    }
+
     res.status(201).json({
       message: "Your recruitment application has been received.",
-      reference
+      reference,
+      emailSent,
+      emailMessage
     });
   } catch (err) {
     console.error("Application submission error:", err);
@@ -519,10 +541,6 @@ app.post("/api/admin/logout", adminOnly, (req, res) => {
   });
 });
 
-// =====================================
-// ADMIN: CHECK LOGIN SESSION
-// =====================================
-
 app.get("/api/admin/me", adminOnly, (_req, res) => {
   res.json({ authenticated: true });
 });
@@ -554,7 +572,7 @@ app.post(
     });
   }
 );
-
+  
 // =====================================
 // ADMIN: UPLOAD VIDEO
 // =====================================
@@ -693,19 +711,21 @@ app.get("/api/admin/applications", adminOnly, async (_req, res) => {
 });
 
 // =====================================
-// EMAIL: UNDER REVIEW NOTIFICATION
+// EMAIL: RESEND EMAIL HELPERS
 // =====================================
 
-async function sendUnderReviewEmail(application) {
+async function sendApplicantEmail({ to, subject, html, text }) {
   if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
-    return {
-      sent: false,
-      reason: "RESEND_API_KEY or EMAIL_FROM is not configured."
-    };
+    throw new Error(
+      "Email is not configured. Add RESEND_API_KEY and EMAIL_FROM in Render."
+    );
   }
 
-  const name = escapeHtml(application.full_name);
-  const reference = escapeHtml(application.reference);
+  if (typeof fetch !== "function") {
+    throw new Error(
+      "This server requires Node.js 18 or newer for the built-in fetch API."
+    );
+  }
 
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -715,36 +735,100 @@ async function sendUnderReviewEmail(application) {
     },
     body: JSON.stringify({
       from: process.env.EMAIL_FROM,
-      to: [application.email],
-      subject: "Your recruitment application is under review",
-      html: `
-        <div style="font-family:Arial,sans-serif;line-height:1.6;color:#253247">
-          <h2>Application Status Update</h2>
-          <p>Dear ${name},</p>
-          <p>Your recruitment application has moved to
-          <strong>Under review</strong>.</p>
-          <p>Application reference: <strong>${reference}</strong></p>
-          <p>Our recruitment team is reviewing your information.</p>
-          <p>This update is not a job offer, employment confirmation,
-          or visa approval.</p>
-          <p>Kind regards,<br>Recruitment Team</p>
-        </div>
-      `,
-      text:
-        `Dear ${application.full_name},\n` +
-        "Your recruitment application is now Under review.\n" +
-        `Reference: ${application.reference}\n` +
-        "Our recruitment team is reviewing your information.\n" +
-        "This is not a job offer, employment confirmation, or visa approval.\n" +
-        "Kind regards,\nRecruitment Team"
+      to: [to],
+      subject,
+      html,
+      text
     })
   });
 
-  if (!response.ok) {
-    throw new Error(`Resend API error: ${await response.text()}`);
+  const responseText = await response.text();
+  let result = {};
+
+  try {
+    result = responseText ? JSON.parse(responseText) : {};
+  } catch (_err) {
+    result = { message: responseText };
   }
 
-  return { sent: true };
+  if (!response.ok) {
+    const detail =
+      result.message || result.error || responseText || response.statusText;
+    throw new Error(
+      `Resend rejected the email (${response.status}): ${detail}`
+    );
+  }
+
+  console.log(
+    "Applicant email accepted by Resend:",
+    result.id || "ID unavailable"
+  );
+
+  return result;
+}
+
+// =====================================
+// EMAIL: APPLICATION RECEIVED
+// =====================================
+
+async function sendApplicationReceivedEmail(application) {
+  const name = escapeHtml(application.full_name);
+  const reference = escapeHtml(application.reference);
+
+  return sendApplicantEmail({
+    to: application.email,
+    subject: "We received your recruitment application",
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#253247">
+        <h2>Application Received</h2>
+        <p>Dear ${name},</p>
+        <p>Thank you for submitting your application. We have received it successfully.</p>
+        <p>Your application reference is: <strong>${reference}</strong></p>
+        <p>Please keep this reference so you can check your application status.</p>
+        <p>Submission confirmation does not mean that you have been selected, offered a job, or approved for a visa.</p>
+        <p>Kind regards,<br>Recruitment Team</p>
+      </div>
+    `,
+    text:
+      `Dear ${application.full_name},\n` +
+      "Thank you. We have received your recruitment application.\n" +
+      `Application reference: ${application.reference}\n` +
+      "Please keep this reference to check your application status.\n" +
+      "This confirmation is not a job offer or visa approval.\n" +
+      "Kind regards,\nRecruitment Team"
+  });
+}
+
+// =====================================
+// EMAIL: UNDER REVIEW
+// =====================================
+
+async function sendUnderReviewEmail(application) {
+  const name = escapeHtml(application.full_name);
+  const reference = escapeHtml(application.reference);
+
+  return sendApplicantEmail({
+    to: application.email,
+    subject: "Your recruitment application is under review",
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#253247">
+        <h2>Application Status Update</h2>
+        <p>Dear ${name},</p>
+        <p>Your recruitment application has moved to <strong>Under review</strong>.</p>
+        <p>Application reference: <strong>${reference}</strong></p>
+        <p>Our recruitment team is reviewing your information.</p>
+        <p>This update is not a job offer, employment confirmation, or visa approval.</p>
+        <p>Kind regards,<br>Recruitment Team</p>
+      </div>
+    `,
+    text:
+      `Dear ${application.full_name},\n` +
+      "Your recruitment application is now Under review.\n" +
+      `Reference: ${application.reference}\n` +
+      "Our recruitment team is reviewing your information.\n" +
+      "This is not a job offer, employment confirmation, or visa approval.\n" +
+      "Kind regards,\nRecruitment Team"
+  });
 }
 
 // =====================================
@@ -782,10 +866,6 @@ app.patch(
 
     try {
       await client.query("BEGIN");
-      
-// =====================================
-// COMPLETE APPLICATION STATUS UPDATE
-// =====================================
 
       const existing = await client.query(
         `SELECT id, reference, full_name, email, status,
@@ -803,29 +883,35 @@ app.patch(
 
       const current = existing.rows[0];
 
-      if (current.status === status) {
+      const statusUnchanged = current.status === status;
+      shouldSendEmail =
+        status === "Under review" &&
+        !current.under_review_email_sent_at;
+
+      if (statusUnchanged && !shouldSendEmail) {
         await client.query("COMMIT");
         return res.json({
-          message: "Application status is unchanged.",
+          message: "Application status is unchanged. The notification was already sent.",
           application: current,
           emailSent: null
         });
       }
 
-      shouldSendEmail =
-        status === "Under review" &&
-        !current.under_review_email_sent_at;
+      if (statusUnchanged) {
+        application = current;
+      } else {
+        const updated = await client.query(
+          `UPDATE applications
+           SET status = $1, updated_at = NOW()
+           WHERE id = $2
+           RETURNING id, reference, full_name, email, status,
+                     created_at, updated_at`,
+          [status, id]
+        );
 
-      const updated = await client.query(
-        `UPDATE applications
-         SET status = $1, updated_at = NOW()
-         WHERE id = $2
-         RETURNING id, reference, full_name, email, status,
-                   created_at, updated_at`,
-        [status, id]
-      );
+        application = updated.rows[0];
+      }
 
-      application = updated.rows[0];
       await client.query("COMMIT");
     } catch (err) {
       await client.query("ROLLBACK").catch(() => {});
@@ -842,28 +928,31 @@ app.patch(
 
     if (shouldSendEmail) {
       try {
-        const emailResult = await sendUnderReviewEmail(application);
-        emailSent = emailResult.sent;
-        emailMessage = emailResult.reason || "Notification email sent.";
+        await sendUnderReviewEmail(application);
 
-        if (emailSent) {
-          await pool.query(
-            `UPDATE applications
-             SET under_review_email_sent_at = NOW()
-             WHERE id = $1
-             AND under_review_email_sent_at IS NULL`,
-            [id]
-          );
-        }
+        await pool.query(
+          `UPDATE applications
+           SET under_review_email_sent_at = NOW()
+           WHERE id = $1
+           AND under_review_email_sent_at IS NULL`,
+          [id]
+        );
+
+        emailSent = true;
+        emailMessage = "Under Review notification email sent.";
       } catch (err) {
         emailSent = false;
-        emailMessage = "Status updated, but notification email failed.";
+        emailMessage = "Status saved, but notification email failed. You can retry by saving Under review again.";
         console.error("Under Review email error:", err);
       }
     }
 
     res.json({
-      message: "Application status updated successfully.",
+      message: shouldSendEmail
+        ? (emailSent
+            ? "Application status saved and email sent."
+            : "Application status saved, but email sending failed.")
+        : "Application status updated successfully.",
       application,
       emailSent,
       emailMessage
@@ -1053,4 +1142,4 @@ initializeDatabase()
     console.error("Database initialization failed:", err);
     process.exit(1);
   });
-  
+                             
