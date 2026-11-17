@@ -13,7 +13,10 @@ const path = require("path");
 
 const app = express();
 
+// =====================================
 // DATABASE
+// =====================================
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl:
@@ -22,7 +25,10 @@ const pool = new Pool({
       : false
 });
 
+// =====================================
 // REQUIRED ENVIRONMENT VARIABLES
+// =====================================
+
 const required = [
   "DATABASE_URL",
   "SESSION_SECRET",
@@ -44,14 +50,20 @@ if (process.env.SESSION_SECRET.length < 32) {
   throw new Error("SESSION_SECRET must be at least 32 characters.");
 }
 
-// CLOUDINARY
+// =====================================
+// CLOUDINARY CONFIGURATION
+// =====================================
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET
 });
 
+// =====================================
 // IMAGE STORAGE
+// =====================================
+
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async () => ({
@@ -83,7 +95,10 @@ const upload = multer({
   }
 });
 
+// =====================================
 // VIDEO STORAGE
+// =====================================
+
 const videoStorage = new CloudinaryStorage({
   cloudinary,
   params: async () => ({
@@ -115,9 +130,61 @@ const videoUpload = multer({
   }
 });
 
+// =====================================
+// CLOUDINARY OPTIMIZATION URLS
+// =====================================
+
+// Optimized image delivery.
+// Original uploads are preserved in Cloudinary.
+
+function optimizedImageUrl(publicId, fallbackUrl) {
+  if (!publicId) return fallbackUrl;
+
+  return cloudinary.url(publicId, {
+    secure: true,
+    resource_type: "image",
+    transformation: [
+      {
+        width: 1280,
+        height: 1280,
+        crop: "limit",
+        quality: "auto",
+        fetch_format: "auto"
+      }
+    ]
+  });
+}
+
+// Optimized video delivery.
+
+function optimizedVideoUrl(publicId, fallbackUrl) {
+  if (!publicId) return fallbackUrl;
+
+  return cloudinary.url(publicId, {
+    secure: true,
+    resource_type: "video",
+    transformation: [
+      {
+        width: 1280,
+        height: 720,
+        crop: "limit",
+        quality: "auto",
+        video_codec: "h264"
+      }
+    ]
+  });
+}
+
+// =====================================
+// PROXY SETTINGS
+// =====================================
+
 app.set("trust proxy", 1);
 
+// =====================================
 // SECURITY HEADERS
+// =====================================
+
 app.use(
   helmet({
     contentSecurityPolicy: {
@@ -140,36 +207,53 @@ app.use(
   })
 );
 
+// =====================================
 // REQUEST PARSING
-app.use(express.json({
-  limit: "30kb"
-}));
+// =====================================
 
-app.use(express.urlencoded({
-  extended: false,
-  limit: "30kb"
-}));
+app.use(
+  express.json({
+    limit: "30kb"
+  })
+);
 
+app.use(
+  express.urlencoded({
+    extended: false,
+    limit: "30kb"
+  })
+);
+
+// =====================================
 // SESSION
-app.use(session({
-  store: new pgSession({
-    pool,
-    createTableIfMissing: true,
-    tableName: "user_sessions"
-  }),
-  name: "recruitment.sid",
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 8 * 60 * 60 * 1000
-  }
-}));
+// =====================================
 
+app.use(
+  session({
+    store: new pgSession({
+      pool,
+      createTableIfMissing: true,
+      tableName: "user_sessions"
+    }),
+
+    name: "recruitment.sid",
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 8 * 60 * 60 * 1000
+    }
+  })
+);
+
+// =====================================
 // RATE LIMITING
+// =====================================
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   limit: 40,
@@ -179,7 +263,10 @@ const limiter = rateLimit({
 
 app.use("/api", limiter);
 
+// =====================================
 // DATABASE INITIALIZATION
+// =====================================
+
 async function initializeDatabase() {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS jobs (
@@ -251,7 +338,10 @@ async function initializeDatabase() {
   `);
 }
 
+// =====================================
 // HELPERS
+// =====================================
+
 function clean(value, max = 500) {
   return String(value ?? "")
     .trim()
@@ -283,7 +373,10 @@ function adminOnly(req, res, next) {
   next();
 }
 
+// =====================================
 // PUBLIC JOBS
+// =====================================
+
 app.get("/api/jobs", async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -295,6 +388,7 @@ app.get("/api/jobs", async (_req, res) => {
         requirements,
         employment_type,
         image_url,
+        image_public_id,
         video_url,
         video_public_id
       FROM jobs
@@ -302,7 +396,19 @@ app.get("/api/jobs", async (_req, res) => {
       ORDER BY created_at DESC
     `);
 
-    res.json(result.rows);
+    const jobs = result.rows.map((job) => ({
+      ...job,
+      image_url: optimizedImageUrl(
+        job.image_public_id,
+        job.image_url
+      ),
+      video_url: optimizedVideoUrl(
+        job.video_public_id,
+        job.video_url
+      )
+    }));
+
+    res.json(jobs);
 
   } catch (err) {
     console.error(err);
@@ -313,7 +419,10 @@ app.get("/api/jobs", async (_req, res) => {
   }
 });
 
+// =====================================
 // PUBLIC GALLERY
+// =====================================
+
 app.get("/api/gallery", async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -322,13 +431,22 @@ app.get("/api/gallery", async (_req, res) => {
         title,
         description,
         image_url,
+        image_public_id,
         created_at
       FROM gallery_photos
       WHERE active = TRUE
       ORDER BY created_at DESC
     `);
 
-    res.json(result.rows);
+    const photos = result.rows.map((photo) => ({
+      ...photo,
+      image_url: optimizedImageUrl(
+        photo.image_public_id,
+        photo.image_url
+      )
+    }));
+
+    res.json(photos);
 
   } catch (err) {
     console.error(err);
@@ -339,7 +457,10 @@ app.get("/api/gallery", async (_req, res) => {
   }
 });
 
+// =====================================
 // APPLICATION SUBMISSION
+// =====================================
+
 app.post("/api/applications", async (req, res) => {
   try {
     const fullName = clean(req.body.fullName, 120);
@@ -448,7 +569,10 @@ app.post("/api/applications", async (req, res) => {
   }
 });
 
+// =====================================
 // TRACK APPLICATION
+// =====================================
+
 app.post("/api/track", async (req, res) => {
   try {
     const reference =
@@ -495,7 +619,10 @@ app.post("/api/track", async (req, res) => {
   }
 });
 
+// =====================================
 // ADMIN LOGIN
+// =====================================
+
 app.post(
   "/api/admin/login",
   rateLimit({
@@ -545,7 +672,10 @@ app.post(
   }
 );
 
+// =====================================
 // ADMIN LOGOUT
+// =====================================
+
 app.post(
   "/api/admin/logout",
   adminOnly,
@@ -566,7 +696,10 @@ app.post(
   }
 );
 
+// =====================================
 // ADMIN STATUS
+// =====================================
+
 app.get(
   "/api/admin/me",
   adminOnly,
@@ -577,7 +710,10 @@ app.get(
   }
 );
 
+// =====================================
 // UPLOAD IMAGE
+// =====================================
+
 app.post(
   "/api/admin/uploads",
   adminOnly,
@@ -589,19 +725,24 @@ app.post(
       });
     }
 
-    const imageUrl =
-      req.file.secure_url ||
-      req.file.path;
-
     const imagePublicId =
       req.file.public_id ||
       req.file.filename;
 
-    if (!imageUrl) {
+    const originalUrl =
+      req.file.secure_url ||
+      req.file.path;
+
+    if (!originalUrl) {
       return res.status(500).json({
         error: "Cloudinary did not return an image URL."
       });
     }
+
+    const imageUrl = optimizedImageUrl(
+      imagePublicId,
+      originalUrl
+    );
 
     res.status(201).json({
       image: {
@@ -612,7 +753,10 @@ app.post(
   }
 );
 
+// =====================================
 // UPLOAD JOB VIDEO
+// =====================================
+
 app.post(
   "/api/admin/video-uploads",
   adminOnly,
@@ -624,19 +768,24 @@ app.post(
       });
     }
 
-    const videoUrl =
-      req.file.secure_url ||
-      req.file.path;
-
     const videoPublicId =
       req.file.public_id ||
       req.file.filename;
 
-    if (!videoUrl) {
+    const originalUrl =
+      req.file.secure_url ||
+      req.file.path;
+
+    if (!originalUrl) {
       return res.status(500).json({
         error: "Cloudinary did not return a video URL."
       });
     }
+
+    const videoUrl = optimizedVideoUrl(
+      videoPublicId,
+      originalUrl
+    );
 
     res.status(201).json({
       video: {
@@ -647,7 +796,10 @@ app.post(
   }
 );
 
+// =====================================
 // ADMIN GALLERY: CREATE
+// =====================================
+
 app.post(
   "/api/admin/gallery",
   adminOnly,
@@ -682,7 +834,14 @@ app.post(
         ]
       );
 
-      res.status(201).json(result.rows[0]);
+      const photo = result.rows[0];
+
+      photo.image_url = optimizedImageUrl(
+        photo.image_public_id,
+        photo.image_url
+      );
+
+      res.status(201).json(photo);
 
     } catch (err) {
       console.error(err);
@@ -694,7 +853,10 @@ app.post(
   }
 );
 
+// =====================================
 // ADMIN GALLERY: LIST
+// =====================================
+
 app.get(
   "/api/admin/gallery",
   adminOnly,
@@ -713,7 +875,15 @@ app.get(
         ORDER BY created_at DESC
       `);
 
-      res.json(result.rows);
+      const photos = result.rows.map((photo) => ({
+        ...photo,
+        image_url: optimizedImageUrl(
+          photo.image_public_id,
+          photo.image_url
+        )
+      }));
+
+      res.json(photos);
 
     } catch (err) {
       console.error(err);
@@ -725,7 +895,10 @@ app.get(
   }
 );
 
+// =====================================
 // ADMIN GALLERY: SHOW/HIDE
+// =====================================
+
 app.patch(
   "/api/admin/gallery/:id",
   adminOnly,
@@ -771,7 +944,10 @@ app.patch(
   }
 );
 
+// =====================================
 // ADMIN APPLICATIONS
+// =====================================
+
 app.get(
   "/api/admin/applications",
   adminOnly,
@@ -812,7 +988,10 @@ app.get(
   }
 );
 
+// =====================================
 // UPDATE APPLICATION STATUS
+// =====================================
+
 app.patch(
   "/api/admin/applications/:id/status",
   adminOnly,
@@ -871,7 +1050,10 @@ app.patch(
   }
 );
 
+// =====================================
 // ADMIN: LIST ALL VACANCIES
+// =====================================
+
 app.get(
   "/api/admin/jobs",
   adminOnly,
@@ -895,7 +1077,19 @@ app.get(
         ORDER BY created_at DESC
       `);
 
-      res.json(result.rows);
+      const jobs = result.rows.map((job) => ({
+        ...job,
+        image_url: optimizedImageUrl(
+          job.image_public_id,
+          job.image_url
+        ),
+        video_url: optimizedVideoUrl(
+          job.video_public_id,
+          job.video_url
+        )
+      }));
+
+      res.json(jobs);
 
     } catch (err) {
       console.error(err);
@@ -907,7 +1101,10 @@ app.get(
   }
 );
 
+// =====================================
 // CREATE VACANCY
+// =====================================
+
 app.post(
   "/api/admin/jobs",
   adminOnly,
@@ -947,8 +1144,7 @@ app.post(
           video_url,
           video_public_id
         )
-        VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
         RETURNING *`,
         [
           title,
@@ -963,19 +1159,34 @@ app.post(
         ]
       );
 
-      res.status(201).json(result.rows[0]);
+      const job = result.rows[0];
+
+      job.image_url = optimizedImageUrl(
+        job.image_public_id,
+        job.image_url
+      );
+
+      job.video_url = optimizedVideoUrl(
+        job.video_public_id,
+        job.video_url
+      );
+
+      res.status(201).json(job);
 
     } catch (err) {
       console.error(err);
 
       res.status(500).json({
-        error: "Unable to publish vacancy."
+        error: "Unable to create vacancy."
       });
     }
   }
 );
 
-// EDIT / ACTIVATE / DEACTIVATE JOB
+// =====================================
+// ADMIN: UPDATE VACANCY
+// =====================================
+
 app.patch(
   "/api/admin/jobs/:id",
   adminOnly,
@@ -989,73 +1200,124 @@ app.patch(
         });
       }
 
-      const fields = {
-        title: ["title", 150],
-        location: ["location", 120],
-        description: ["description", 3000],
-        requirements: ["requirements", 3000],
-        employmentType: ["employment_type", 60],
-        imageUrl: ["image_url", 2000],
-        imagePublicId: ["image_public_id", 500],
-        videoUrl: ["video_url", 2000],
-        videoPublicId: ["video_public_id", 500]
-      };
+      const existing = await pool.query(
+        "SELECT * FROM jobs WHERE id = $1",
+        [id]
+      );
 
-      const updates = [];
-      const values = [];
-
-      for (const [key, [column, max]] of Object.entries(fields)) {
-        if (Object.prototype.hasOwnProperty.call(req.body, key)) {
-          const value = clean(req.body[key], max);
-
-          if (
-            ["title", "location", "description"].includes(key) &&
-            !value
-          ) {
-            return res.status(400).json({
-              error: `${key} cannot be empty.`
-            });
-          }
-
-          values.push(value || null);
-          updates.push(`${column} = $${values.length}`);
-        }
+      if (!existing.rowCount) {
+        return res.status(404).json({
+          error: "Vacancy not found."
+        });
       }
 
-      if (Object.prototype.hasOwnProperty.call(req.body, "active")) {
+      const old = existing.rows[0];
+
+      const has = (key) =>
+        Object.prototype.hasOwnProperty.call(req.body, key);
+
+      const title = has("title")
+        ? clean(req.body.title, 150)
+        : old.title;
+
+      const location = has("location")
+        ? clean(req.body.location, 120)
+        : old.location;
+
+      const description = has("description")
+        ? clean(req.body.description, 3000)
+        : old.description;
+
+      const requirements = has("requirements")
+        ? clean(req.body.requirements, 3000)
+        : old.requirements;
+
+      const employmentType = has("employmentType")
+        ? clean(req.body.employmentType, 60)
+        : old.employment_type;
+
+      const imageUrl = has("imageUrl")
+        ? clean(req.body.imageUrl, 2000) || null
+        : old.image_url;
+
+      const imagePublicId = has("imagePublicId")
+        ? clean(req.body.imagePublicId, 500) || null
+        : old.image_public_id;
+
+      const videoUrl = has("videoUrl")
+        ? clean(req.body.videoUrl, 2000) || null
+        : old.video_url;
+
+      const videoPublicId = has("videoPublicId")
+        ? clean(req.body.videoPublicId, 500) || null
+        : old.video_public_id;
+
+      let active = old.active;
+
+      if (has("active")) {
         if (typeof req.body.active !== "boolean") {
           return res.status(400).json({
             error: "Invalid vacancy visibility value."
           });
         }
 
-        values.push(req.body.active);
-        updates.push(`active = $${values.length}`);
+        active = req.body.active;
       }
 
-      if (updates.length === 0) {
+      if (
+        !title ||
+        !location ||
+        !description ||
+        !employmentType
+      ) {
         return res.status(400).json({
-          error: "No valid changes were provided."
+          error: "Title, location, description and employment type are required."
         });
       }
-
-      values.push(id);
 
       const result = await pool.query(
         `UPDATE jobs
-        SET ${updates.join(", ")}
-        WHERE id = $${values.length}
+        SET
+          title = $1,
+          location = $2,
+          description = $3,
+          requirements = $4,
+          employment_type = $5,
+          image_url = $6,
+          image_public_id = $7,
+          video_url = $8,
+          video_public_id = $9,
+          active = $10
+        WHERE id = $11
         RETURNING *`,
-        values
+        [
+          title,
+          location,
+          description,
+          requirements,
+          employmentType,
+          imageUrl,
+          imagePublicId,
+          videoUrl,
+          videoPublicId,
+          active,
+          id
+        ]
       );
 
-      if (!result.rowCount) {
-        return res.status(404).json({
-          error: "Vacancy not found."
-        });
-      }
+      const job = result.rows[0];
 
-      res.json(result.rows[0]);
+      job.image_url = optimizedImageUrl(
+        job.image_public_id,
+        job.image_url
+      );
+
+      job.video_url = optimizedVideoUrl(
+        job.video_public_id,
+        job.video_url
+      );
+
+      res.json(job);
 
     } catch (err) {
       console.error(err);
@@ -1067,260 +1329,105 @@ app.patch(
   }
 );
 
-// SERVE WEBSITE FILES
-app.use(express.static(path.join(__dirname, "public")));
+// =====================================
+// ADMIN: DELETE VACANCY
+// =====================================
 
-// API NOT FOUND
-app.use("/api", (_req, res) => {
+app.delete(
+  "/api/admin/jobs/:id",
+  adminOnly,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({
+          error: "Invalid vacancy ID."
+        });
+      }
+
+      const result = await pool.query(
+        "DELETE FROM jobs WHERE id = $1 RETURNING id",
+        [id]
+      );
+
+      if (!result.rowCount) {
+        return res.status(404).json({
+          error: "Vacancy not found."
+        });
+      }
+
+      res.json({
+        message: "Vacancy deleted successfully."
+      });
+
+    } catch (err) {
+      console.error(err);
+
+      res.status(500).json({
+        error: "Unable to delete vacancy."
+      });
+    }
+  }
+);
+
+// =====================================
+// SERVE WEBSITE FILES
+// =====================================
+
+app.use(
+  express.static(path.join(__dirname, "public"))
+);
+
+// =====================================
+// NOT FOUND
+// =====================================
+
+app.use((req, res) => {
   res.status(404).json({
-    error: "API endpoint not found."
+    error: "The requested resource was not found."
   });
 });
 
-// GENERAL ERROR HANDLER
+// =====================================
+// GLOBAL ERROR HANDLER
+// =====================================
+
 app.use((err, _req, res, _next) => {
   console.error(err);
 
-  res.status(500).json({
-    error: err.message || "Something went wrong."
-  });
-});
+  if (err instanceof multer.MulterError) {
+    if (err.code === "LIMIT_FILE_SIZE") {
+      return res.status(413).json({
+        error: "The uploaded file is too large."
+      });
+    }
 
-// START SERVER
-const PORT = process.env.PORT || 3000;
-
-initializeDatabase()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
+    return res.status(400).json({
+      error: "File upload failed."
     });
-  })
-  .catch((err) => {
-    console.error("Database initialization failed:", err);
-    process.exit(1);
-  });
-
-// ADMIN: LIST ALL VACANCIES
-app.get(
-  "/api/admin/jobs",
-  adminOnly,
-  async (_req, res) => {
-    try {
-      const result = await pool.query(`
-        SELECT
-          id,
-          title,
-          location,
-          description,
-          requirements,
-          employment_type,
-          image_url,
-          image_public_id,
-          video_url,
-          video_public_id,
-          active,
-          created_at
-        FROM jobs
-        ORDER BY created_at DESC
-      `);
-
-      res.json(result.rows);
-
-    } catch (err) {
-      console.error(err);
-
-      res.status(500).json({
-        error: "Unable to load vacancies."
-      });
-    }
   }
-);
 
-// CREATE VACANCY
-app.post(
-  "/api/admin/jobs",
-  adminOnly,
-  async (req, res) => {
-    const title = clean(req.body.title, 150);
-    const location = clean(req.body.location, 120);
-    const description = clean(req.body.description, 3000);
-    const requirements = clean(req.body.requirements, 3000);
-
-    const employmentType = clean(
-      req.body.employmentType || "Full-time",
-      60
-    );
-
-    const imageUrl = clean(req.body.imageUrl, 2000);
-    const imagePublicId = clean(req.body.imagePublicId, 500);
-    const videoUrl = clean(req.body.videoUrl, 2000);
-    const videoPublicId = clean(req.body.videoPublicId, 500);
-
-    if (!title || !location || !description) {
-      return res.status(400).json({
-        error: "Title, location and description are required."
-      });
-    }
-
-    try {
-      const result = await pool.query(
-        `INSERT INTO jobs
-        (
-          title,
-          location,
-          description,
-          requirements,
-          employment_type,
-          image_url,
-          image_public_id,
-          video_url,
-          video_public_id
-        )
-        VALUES
-        ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-        RETURNING *`,
-        [
-          title,
-          location,
-          description,
-          requirements,
-          employmentType,
-          imageUrl || null,
-          imagePublicId || null,
-          videoUrl || null,
-          videoPublicId || null
-        ]
-      );
-
-      res.status(201).json(result.rows[0]);
-
-    } catch (err) {
-      console.error(err);
-
-      res.status(500).json({
-        error: "Unable to publish vacancy."
-      });
-    }
+  if (err.message && err.message.startsWith("Only ")) {
+    return res.status(400).json({
+      error: err.message
+    });
   }
-);
-
-// EDIT / ACTIVATE / DEACTIVATE JOB
-app.patch(
-  "/api/admin/jobs/:id",
-  adminOnly,
-  async (req, res) => {
-    try {
-      const id = Number(req.params.id);
-
-      if (!Number.isSafeInteger(id) || id < 1) {
-        return res.status(400).json({
-          error: "Invalid vacancy ID."
-        });
-      }
-
-      const fields = {
-        title: ["title", 150],
-        location: ["location", 120],
-        description: ["description", 3000],
-        requirements: ["requirements", 3000],
-        employmentType: ["employment_type", 60],
-        imageUrl: ["image_url", 2000],
-        imagePublicId: ["image_public_id", 500],
-        videoUrl: ["video_url", 2000],
-        videoPublicId: ["video_public_id", 500]
-      };
-
-      const updates = [];
-      const values = [];
-
-      for (const [key, [column, max]] of Object.entries(fields)) {
-        if (Object.prototype.hasOwnProperty.call(req.body, key)) {
-          const value = clean(req.body[key], max);
-
-          if (
-            ["title", "location", "description"].includes(key) &&
-            !value
-          ) {
-            return res.status(400).json({
-              error: `${key} cannot be empty.`
-            });
-          }
-
-          values.push(value || null);
-          updates.push(`${column} = $${values.length}`);
-        }
-      }
-
-      if (Object.prototype.hasOwnProperty.call(req.body, "active")) {
-        if (typeof req.body.active !== "boolean") {
-          return res.status(400).json({
-            error: "Invalid vacancy visibility value."
-          });
-        }
-
-        values.push(req.body.active);
-        updates.push(`active = $${values.length}`);
-      }
-
-      if (updates.length === 0) {
-        return res.status(400).json({
-          error: "No valid changes were provided."
-        });
-      }
-
-      values.push(id);
-
-      const result = await pool.query(
-        `UPDATE jobs
-        SET ${updates.join(", ")}
-        WHERE id = $${values.length}
-        RETURNING *`,
-        values
-      );
-
-      if (!result.rowCount) {
-        return res.status(404).json({
-          error: "Vacancy not found."
-        });
-      }
-
-      res.json(result.rows[0]);
-
-    } catch (err) {
-      console.error(err);
-
-      res.status(500).json({
-        error: "Unable to update vacancy."
-      });
-    }
-  }
-);
-
-// SERVE WEBSITE FILES
-app.use(express.static(path.join(__dirname, "public")));
-
-// API NOT FOUND
-app.use("/api", (_req, res) => {
-  res.status(404).json({
-    error: "API endpoint not found."
-  });
-});
-
-// GENERAL ERROR HANDLER
-app.use((err, _req, res, _next) => {
-  console.error(err);
 
   res.status(500).json({
-    error: err.message || "Something went wrong."
+    error: "An unexpected server error occurred."
   });
 });
 
+// =====================================
 // START SERVER
+// =====================================
+
 const PORT = process.env.PORT || 3000;
 
 initializeDatabase()
   .then(() => {
-    app.listen(PORT, () => {
+    app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on port ${PORT}`);
     });
   })
