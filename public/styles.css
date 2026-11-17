@@ -747,3 +747,180 @@ a:focus-visible {
     height: 230px;
   }
 }
+
+/* =========================================
+   CORRECTED JOB VACANCY LAYOUT
+   Images/videos LEFT, job details RIGHT
+========================================= */
+
+#jobs.job-list-layout {
+  display: flex !important;
+  flex-direction: column !important;
+  grid-template-columns: none !important;
+  gap: 15px !important;
+  width: 100% !important;
+}
+
+#jobs .job-row-card {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: flex-start !important;
+  gap: 15px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  padding: 12px !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  border: 1px solid var(--border) !important;
+  border-top: 3px solid var(--red) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 4px 15px #182d4308 !important;
+}
+
+#jobs .job-row-card:hover {
+  transform: none !important;
+}
+
+/* MEDIA COLUMN */
+
+#jobs .job-row-card .job-media {
+  display: flex !important;
+  flex: 0 0 125px !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+  width: 125px !important;
+  max-width: 125px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+/* JOB PHOTOS AND VIDEOS */
+
+#jobs .job-row-card .job-media img,
+#jobs .job-row-card .job-media video {
+  display: block !important;
+  width: 100% !important;
+  height: 90px !important;
+  max-height: 90px !important;
+  min-height: 0 !important;
+  object-fit: cover !important;
+  border-radius: 7px !important;
+  background: #eef1f5 !important;
+}
+
+/* VIDEO CONTROLS */
+
+#jobs .job-row-card .job-media video {
+  object-fit: contain !important;
+}
+
+/* JOB DETAILS COLUMN */
+
+#jobs .job-row-card .job-details {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  width: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow-wrap: anywhere !important;
+}
+
+#jobs .job-row-card .job-title {
+  margin: 0 0 6px !important;
+  color: var(--navy) !important;
+  font-size: 17px !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere !important;
+}
+
+#jobs .job-row-card .job-location,
+#jobs .job-row-card .job-description,
+#jobs .job-row-card .job-requirements {
+  margin: 6px 0 !important;
+  font-size: 12px !important;
+  line-height: 1.5 !important;
+  overflow-wrap: anywhere !important;
+}
+
+#jobs .job-row-card .job-apply-button {
+  display: inline-flex !important;
+  margin-top: 8px !important;
+  padding: 8px 13px !important;
+  min-height: 36px !important;
+  font-size: 12px !important;
+}
+
+/* MOBILE LAYOUT */
+
+@media (max-width: 600px) {
+
+  #jobs.job-list-layout {
+    gap: 11px !important;
+  }
+
+  #jobs .job-row-card {
+    gap: 9px !important;
+    padding: 9px !important;
+  }
+
+  #jobs .job-row-card .job-media {
+    flex: 0 0 95px !important;
+    width: 95px !important;
+    max-width: 95px !important;
+  }
+
+  #jobs .job-row-card .job-media img,
+  #jobs .job-row-card .job-media video {
+    height: 72px !important;
+    max-height: 72px !important;
+  }
+
+  #jobs .job-row-card .job-title {
+    font-size: 14px !important;
+  }
+
+  #jobs .job-row-card .job-location,
+  #jobs .job-row-card .job-description,
+  #jobs .job-row-card .job-requirements {
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+  }
+
+  #jobs .job-row-card .job-apply-button {
+    padding: 7px 10px !important;
+    font-size: 11px !important;
+  }
+}
+
+/* VERY SMALL PHONES */
+
+@media (max-width: 350px) {
+
+  #jobs .job-row-card {
+    gap: 7px !important;
+    padding: 7px !important;
+  }
+
+  #jobs .job-row-card .job-media {
+    flex-basis: 78px !important;
+    width: 78px !important;
+    max-width: 78px !important;
+  }
+
+  #jobs .job-row-card .job-media img,
+  #jobs .job-row-card .job-media video {
+    height: 65px !important;
+    max-height: 65px !important;
+  }
+
+  #jobs .job-row-card .job-title {
+    font-size: 12px !important;
+  }
+
+  #jobs .job-row-card .job-description,
+  #jobs .job-row-card .job-requirements,
+  #jobs .job-row-card .job-location {
+    font-size: 10px !important;
+  }
+}
