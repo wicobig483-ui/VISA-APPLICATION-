@@ -33,12 +33,10 @@ a {
   color: inherit;
 }
 
-/* =====================================
-   HEADER
-===================================== */
+/* HEADER */
 
 .site-header {
-  height: 82px;
+  min-height: 82px;
   padding: 0 7%;
   display: flex;
   align-items: center;
@@ -103,9 +101,7 @@ a {
   cursor: pointer;
 }
 
-/* =====================================
-   HERO SECTION
-===================================== */
+/* HERO */
 
 .hero {
   background: var(--navy);
@@ -272,9 +268,7 @@ a {
   margin-top: 20px;
 }
 
-/* =====================================
-   INFORMATION STRIP
-===================================== */
+/* INFORMATION STRIP */
 
 .info-strip {
   padding: 27px 9%;
@@ -313,9 +307,7 @@ a {
   color: var(--muted);
 }
 
-/* =====================================
-   GENERAL SECTIONS
-===================================== */
+/* GENERAL SECTIONS */
 
 .section {
   padding: 85px 9%;
@@ -336,9 +328,7 @@ a {
   font-size: 14px;
 }
 
-/* =====================================
-   PREPARATION CARDS
-===================================== */
+/* PREPARATION CARDS */
 
 .prep-grid {
   display: grid;
@@ -379,9 +369,7 @@ a {
   font-weight: 700;
 }
 
-/* =====================================
-   APPLICATION SECTION
-===================================== */
+/* APPLICATION */
 
 .application-section {
   background: var(--pale);
@@ -525,9 +513,7 @@ a {
   color: #c62828;
 }
 
-/* =====================================
-   TRACKING SECTION
-===================================== */
+/* TRACKING */
 
 .tracking-section {
   padding: 75px 9%;
@@ -600,9 +586,7 @@ a {
   padding: 12px;
 }
 
-/* =====================================
-   FOOTER
-===================================== */
+/* FOOTER */
 
 footer {
   background: #0c2232;
@@ -633,9 +617,7 @@ footer > small {
   color: #82949f;
 }
 
-/* =====================================
-   JOB VIDEOS / REELS SECTION
-===================================== */
+/* JOB VIDEO SECTION */
 
 #job-videos {
   background: #f8fafb;
@@ -686,8 +668,6 @@ footer > small {
   max-width: 300px;
 }
 
-/* Compact individual video cards */
-
 .job-video-card {
   min-width: 0;
   max-width: 100%;
@@ -699,27 +679,27 @@ footer > small {
 }
 
 .job-video-player {
-  width: 100%;
-  height: 150px;
-  max-height: 150px;
-  aspect-ratio: 16 / 9;
   display: block;
+  width: 100%;
+  height: 95px;
+  max-height: 95px;
+  aspect-ratio: 16 / 9;
   background: #101820;
   object-fit: cover;
 }
 
 .job-video-details {
-  padding: 12px;
+  padding: 9px;
 }
 
 .job-video-details h3 {
-  font: 700 14px Manrope, sans-serif;
+  font: 700 12px Manrope, sans-serif;
   margin: 0 0 5px;
   color: var(--ink);
 }
 
 .job-video-details p {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--muted);
   margin: 4px 0;
   overflow-wrap: anywhere;
@@ -728,14 +708,14 @@ footer > small {
 .job-video-apply {
   display: flex;
   width: 100%;
-  margin-top: 11px;
-  padding: 10px;
+  margin-top: 9px;
+  padding: 9px;
   justify-content: center;
   background: var(--red);
   color: white;
   text-decoration: none;
   border-radius: 7px;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
 }
 
@@ -743,9 +723,7 @@ footer > small {
   background: #bd3040;
 }
 
-/* =====================================
-   VIDEO ERRORS
-===================================== */
+/* VIDEO ERRORS */
 
 .video-error {
   padding: 25px 15px;
@@ -755,9 +733,7 @@ footer > small {
   font-size: 12px;
 }
 
-/* =====================================
-   GENERAL IMPROVEMENTS
-===================================== */
+/* GENERAL IMPROVEMENTS */
 
 .application-wrap textarea {
   width: 100%;
@@ -782,15 +758,12 @@ footer > small {
   cursor: not-allowed;
 }
 
-/* =====================================
-   TABLET RESPONSIVENESS
-===================================== */
+/* TABLET */
 
 @media (max-width: 760px) {
-
   .site-header {
     padding: 0 5%;
-    height: 70px;
+    min-height: 70px;
     gap: 10px;
   }
 
@@ -860,12 +833,9 @@ footer > small {
   }
 }
 
-/* =====================================
-   MOBILE PHONES
-===================================== */
+/* MOBILE */
 
 @media (max-width: 600px) {
-
   #job-videos {
     padding-left: 5%;
     padding-right: 5%;
@@ -875,7 +845,6 @@ footer > small {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
-    overflow: visible;
   }
 
   .job-video-card {
@@ -883,41 +852,31 @@ footer > small {
   }
 
   .job-video-player {
-    width: 100%;
-    height: 115px;
-    max-height: 115px;
-    aspect-ratio: 16 / 9;
-    object-fit: cover;
+    height: 75px;
+    max-height: 75px;
   }
 
   .job-video-details {
-    padding: 9px;
+    padding: 7px;
   }
 
   .job-video-details h3 {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .job-video-details p {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .job-video-apply {
-    font-size: 10px;
-    padding: 9px 5px;
+    font-size: 9px;
+    padding: 8px 5px;
   }
 
   .job-video-empty {
     grid-column: 1 / -1;
     min-height: 150px;
   }
-}
-
-/* =====================================
-   SMALL PHONE SCREENS
-===================================== */
-
-@media (max-width: 470px) {
 
   .hero h1 {
     font-size: 42px;
@@ -943,10 +902,22 @@ footer > small {
   .application-wrap .section-heading h2 {
     font-size: 29px;
   }
+
+  /* JOB MEDIA INSIDE VACANCY CARDS */
+
+  #jobs .job-image,
+  #jobs .job-video-player,
+  #jobs video {
+    width: 100% !important;
+    height: 75px !important;
+    max-height: 75px !important;
+    object-fit: cover !important;
+  }
 }
 
-@media (max-width: 380px) {
+/* SMALL PHONES */
 
+@media (max-width: 380px) {
   .brand strong {
     font-size: 12px;
   }
@@ -977,59 +948,72 @@ footer > small {
   }
 
   .job-video-player {
-    height: 100px;
-    max-height: 100px;
+    height: 70px;
+    max-height: 70px;
   }
 }
 
-/* EXTRA SMALL JOB PHOTOS AND VIDEOS */
+/* =====================================
+   FINAL JOB MEDIA SIZE OVERRIDES
+===================================== */
+
+/* Target vacancy media, including mechanic and electrician */
+#jobs .job-image,
+#jobs .job-media img,
+#jobs .job-media video,
+#jobs .job-video-player,
+#jobs video {
+  width: 100% !important;
+  height: 95px !important;
+  max-height: 95px !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+/* Compact separate job video cards */
+#job-videos .job-video-player,
+#job-videos video,
+#job-videos .job-video-card img {
+  width: 100% !important;
+  height: 95px !important;
+  max-height: 95px !important;
+  object-fit: cover !important;
+  display: block !important;
+}
 
 #job-videos .job-video-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 10px !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
 }
 
 #job-videos .job-video-card {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
+  min-width: 0;
+  width: 100%;
+  overflow: hidden;
 }
 
-#job-videos .job-video-player {
-  width: 100% !important;
-  height: 85px !important;
-  max-height: 85px !important;
-  aspect-ratio: 16 / 9 !important;
-  object-fit: cover !important;
-}
-
-#job-videos .job-video-details {
-  padding: 7px !important;
-}
-
-#job-videos .job-video-details h3 {
-  font-size: 11px !important;
-  line-height: 1.3 !important;
-}
-
-#job-videos .job-video-details p {
-  font-size: 9px !important;
-  line-height: 1.4 !important;
-}
-
-#job-videos .job-video-apply {
-  font-size: 9px !important;
-  padding: 7px !important;
+/* Keep descriptions readable */
+#jobs .job-description,
+#jobs .job-requirements {
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 600px) {
-  #job-videos .job-video-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  }
-
-  #job-videos .job-video-player {
+  #jobs .job-image,
+  #jobs .job-media img,
+  #jobs .job-media video,
+  #jobs .job-video-player,
+  #jobs video,
+  #job-videos .job-video-player,
+  #job-videos video,
+  #job-videos .job-video-card img {
     height: 75px !important;
     max-height: 75px !important;
+  }
+
+  #job-videos .job-video-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
