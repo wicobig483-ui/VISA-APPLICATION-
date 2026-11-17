@@ -42,19 +42,14 @@ async function api(url, options = {}) {
 function createElement(tag, className, text = "") {
   const element = document.createElement(tag);
 
-  if (className) {
-    element.className = className;
-  }
-
-  if (text) {
-    element.textContent = text;
-  }
+  if (className) element.className = className;
+  if (text) element.textContent = text;
 
   return element;
 }
 
 /* =====================================
-   LOAD JOB VACANCIES AND VIDEOS
+   LOAD JOB VACANCIES
 ===================================== */
 
 async function loadJobs() {
@@ -70,6 +65,9 @@ async function loadJobs() {
 
     box.replaceChildren();
 
+    box.classList.remove("compact-jobs-grid");
+    box.classList.add("job-list-layout");
+
     if (select && select.tagName === "SELECT") {
       select.innerHTML =
         '<option value="">General profile registration</option>';
@@ -81,16 +79,20 @@ async function loadJobs() {
       return;
     }
 
-    // Compact job listing layout
-    box.classList.add("compact-jobs-grid");
-
     jobs.forEach((job) => {
-      const card = createElement("article", "job compact-job-card");
 
-      // MEDIA CONTAINER
-      const media = createElement("div", "job-media");
+      const card = createElement(
+        "article",
+        "job job-row-card"
+      );
 
-      // VACANCY PHOTO
+      /* MEDIA COLUMN */
+
+      const media = createElement(
+        "div",
+        "job-media"
+      );
+
       if (job.image_url) {
         const img = document.createElement("img");
 
@@ -104,7 +106,6 @@ async function loadJobs() {
         media.append(img);
       }
 
-      // JOB VIDEO
       if (job.video_url) {
         try {
           const videoUrl = new URL(job.video_url);
@@ -136,41 +137,43 @@ async function loadJobs() {
 
             media.append(video);
           }
+
         } catch (error) {
           console.error("Invalid job video URL:", error);
         }
       }
 
-      // ADD MEDIA ONLY WHEN AVAILABLE
       if (media.children.length) {
         card.append(media);
       }
 
-      // JOB INFORMATION CONTAINER
-      const details = createElement("div", "job-details");
+      /* DESCRIPTION COLUMN */
 
-      // JOB TITLE
+      const details = createElement(
+        "div",
+        "job-details"
+      );
+
       const heading = createElement(
         "h3",
         "job-title",
         job.title || "Job opportunity"
       );
 
-      // LOCATION AND EMPLOYMENT TYPE
       const location = createElement(
         "p",
         "muted job-location",
-        `${job.location || ""} · ${job.employment_type || ""}`
+        [job.location, job.employment_type]
+          .filter(Boolean)
+          .join(" · ")
       );
 
-      // DESCRIPTION
       const description = createElement(
         "p",
         "job-description",
         job.description || ""
       );
 
-      // REQUIREMENTS
       const requirements = createElement(
         "p",
         "job-requirements",
@@ -179,14 +182,16 @@ async function loadJobs() {
           : ""
       );
 
-      // APPLY BUTTON
       const applyButton = document.createElement("button");
 
       applyButton.type = "button";
-      applyButton.className = "btn secondary job-apply-button";
+      applyButton.className =
+        "btn secondary job-apply-button";
+
       applyButton.textContent = "Apply for this job";
 
       applyButton.addEventListener("click", () => {
+
         if (select) {
           select.value = String(job.id);
         }
@@ -220,16 +225,18 @@ async function loadJobs() {
       card.append(details);
       box.append(card);
 
-      // APPLICATION DROPDOWN
+      /* APPLICATION DROPDOWN */
+
       if (select && select.tagName === "SELECT") {
         const option = document.createElement("option");
 
         option.value = String(job.id);
         option.textContent =
-          `${job.title} — ${job.location}`;
+          `${job.title} — ${job.location || ""}`;
 
         select.append(option);
       }
+
     });
 
   } catch (error) {
@@ -260,6 +267,7 @@ async function loadGalleryPhotos() {
     gallery.classList.add("compact-gallery-grid");
 
     photos.forEach((photo) => {
+
       const card = createElement(
         "article",
         "gallery-card compact-gallery-card"
@@ -289,6 +297,7 @@ async function loadGalleryPhotos() {
 
       card.append(img, title, description);
       gallery.append(card);
+
     });
 
   } catch (error) {
