@@ -36,6 +36,24 @@ async function api(url, options = {}) {
 }
 
 /* =====================================
+   CREATE ELEMENT HELPER
+===================================== */
+
+function createElement(tag, className, text = "") {
+  const element = document.createElement(tag);
+
+  if (className) {
+    element.className = className;
+  }
+
+  if (text) {
+    element.textContent = text;
+  }
+
+  return element;
+}
+
+/* =====================================
    LOAD JOB VACANCIES AND VIDEOS
 ===================================== */
 
@@ -63,9 +81,14 @@ async function loadJobs() {
       return;
     }
 
+    // Compact job listing layout
+    box.classList.add("compact-jobs-grid");
+
     jobs.forEach((job) => {
-      const card = document.createElement("article");
-      card.className = "job";
+      const card = createElement("article", "job compact-job-card");
+
+      // MEDIA CONTAINER
+      const media = createElement("div", "job-media");
 
       // VACANCY PHOTO
       if (job.image_url) {
@@ -78,7 +101,7 @@ async function loadJobs() {
 
         img.addEventListener("error", () => img.remove());
 
-        card.append(img);
+        media.append(img);
       }
 
       // JOB VIDEO
@@ -102,47 +125,65 @@ async function loadJobs() {
             video.src = videoUrl.href;
 
             video.addEventListener("error", () => {
-              const errorMessage = document.createElement("p");
-
-              errorMessage.className = "video-error";
-              errorMessage.textContent =
-                "This job video could not be played.";
+              const errorMessage = createElement(
+                "p",
+                "video-error",
+                "This job video could not be played."
+              );
 
               video.replaceWith(errorMessage);
             });
 
-            card.append(video);
+            media.append(video);
           }
         } catch (error) {
           console.error("Invalid job video URL:", error);
         }
       }
 
+      // ADD MEDIA ONLY WHEN AVAILABLE
+      if (media.children.length) {
+        card.append(media);
+      }
+
+      // JOB INFORMATION CONTAINER
+      const details = createElement("div", "job-details");
+
       // JOB TITLE
-      const heading = document.createElement("h3");
-      heading.textContent = job.title || "Job opportunity";
+      const heading = createElement(
+        "h3",
+        "job-title",
+        job.title || "Job opportunity"
+      );
 
       // LOCATION AND EMPLOYMENT TYPE
-      const location = document.createElement("p");
-      location.className = "muted";
-      location.textContent =
-        `${job.location || ""} · ${job.employment_type || ""}`;
+      const location = createElement(
+        "p",
+        "muted job-location",
+        `${job.location || ""} · ${job.employment_type || ""}`
+      );
 
       // DESCRIPTION
-      const description = document.createElement("p");
-      description.textContent = job.description || "";
+      const description = createElement(
+        "p",
+        "job-description",
+        job.description || ""
+      );
 
       // REQUIREMENTS
-      const requirements = document.createElement("p");
-      requirements.textContent = job.requirements
-        ? `Requirements: ${job.requirements}`
-        : "";
+      const requirements = createElement(
+        "p",
+        "job-requirements",
+        job.requirements
+          ? `Requirements: ${job.requirements}`
+          : ""
+      );
 
       // APPLY BUTTON
       const applyButton = document.createElement("button");
 
       applyButton.type = "button";
-      applyButton.className = "btn secondary";
+      applyButton.className = "btn secondary job-apply-button";
       applyButton.textContent = "Apply for this job";
 
       applyButton.addEventListener("click", () => {
@@ -168,7 +209,7 @@ async function loadJobs() {
         }
       });
 
-      card.append(
+      details.append(
         heading,
         location,
         description,
@@ -176,6 +217,7 @@ async function loadJobs() {
         applyButton
       );
 
+      card.append(details);
       box.append(card);
 
       // APPLICATION DROPDOWN
@@ -210,14 +252,18 @@ async function loadGalleryPhotos() {
 
     gallery.replaceChildren();
 
-    if (!photos.length) {
+    if (!Array.isArray(photos) || !photos.length) {
       gallery.textContent = "No photos available yet.";
       return;
     }
 
+    gallery.classList.add("compact-gallery-grid");
+
     photos.forEach((photo) => {
-      const card = document.createElement("article");
-      card.className = "gallery-card";
+      const card = createElement(
+        "article",
+        "gallery-card compact-gallery-card"
+      );
 
       const img = document.createElement("img");
 
@@ -229,11 +275,17 @@ async function loadGalleryPhotos() {
         img.alt = "Photo could not be loaded";
       });
 
-      const title = document.createElement("h3");
-      title.textContent = photo.title || "";
+      const title = createElement(
+        "h3",
+        "gallery-title",
+        photo.title || ""
+      );
 
-      const description = document.createElement("p");
-      description.textContent = photo.description || "";
+      const description = createElement(
+        "p",
+        "gallery-description",
+        photo.description || ""
+      );
 
       card.append(img, title, description);
       gallery.append(card);
@@ -279,12 +331,10 @@ if (applicationForm) {
 
     payload.phone = String(payload.phone || "").trim();
 
-    // Server expects a Boolean, not "on" or "yes".
     payload.consent = Boolean(
       consentField && consentField.checked
     );
 
-    // Ensure the job ID is a valid number or null.
     const jobId = Number(payload.jobId);
 
     payload.jobId =
@@ -292,9 +342,7 @@ if (applicationForm) {
         ? jobId
         : null;
 
-    const button = form.querySelector(
-      '[type="submit"]'
-    );
+    const button = form.querySelector('[type="submit"]');
 
     if (button) button.disabled = true;
 
