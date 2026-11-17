@@ -1,6 +1,9 @@
 
 const $ = (s) => document.querySelector(s);
 
+// CURRENT EDITING VACANCY
+let editingJobId = null;
+
 // API HELPER
 async function api(url, options = {}) {
   const headers = { ...(options.headers || {}) };
@@ -173,12 +176,11 @@ if (jobVideoInput && jobVideoPreview) {
   });
 }
 
-// UPLOAD IMAGE TO CLOUDINARY THROUGH SERVER
+// UPLOAD IMAGE
 async function uploadImage(file) {
   if (!file) return null;
 
   const formData = new FormData();
-
   formData.append("image", file);
 
   const result = await api("/api/admin/uploads", {
@@ -189,12 +191,11 @@ async function uploadImage(file) {
   return result.image;
 }
 
-// UPLOAD VIDEO TO CLOUDINARY THROUGH SERVER
+// UPLOAD VIDEO
 async function uploadVideo(file) {
   if (!file) return null;
 
   const formData = new FormData();
-
   formData.append("video", file);
 
   const result = await api("/api/admin/video-uploads", {
@@ -203,6 +204,59 @@ async function uploadVideo(file) {
   });
 
   return result.video;
+}
+
+// CLEAR MEDIA PREVIEWS
+function clearJobPreviews() {
+  const imagePreview = $("#jobPreview");
+
+  if (imagePreview) {
+    imagePreview.hidden = true;
+    imagePreview.removeAttribute("src");
+  }
+
+  if (jobVideoPreview) {
+    jobVideoPreview.pause();
+    jobVideoPreview.removeAttribute("src");
+    jobVideoPreview.load();
+    jobVideoPreview.hidden = true;
+  }
+
+  if (jobVideoInput) {
+    jobVideoInput.value = "";
+  }
+
+  if ($("#jobImage")) {
+    $("#jobImage").value = "";
+  }
+}
+
+// RESET VACANCY FORM
+function resetJobEditor() {
+  editingJobId = null;
+
+  const form = $("#jobForm");
+
+  if (form) {
+    form.reset();
+  }
+
+  clearJobPreviews();
+
+  if ($("#jobFormTitle")) {
+    $("#jobFormTitle").textContent = "Publish a vacancy";
+  }
+
+  if ($("#jobSubmit")) {
+    $("#jobSubmit").textContent = "Publish vacancy";
+  }
+
+  if ($("#cancelJobEdit")) {
+    $("#cancelJobEdit").hidden = true;
+  }
+
+  msg($("#jobResult"), "");
+  msg($("#videoResult"), "");
 }
 
 // LOGIN AND DASHBOARD
@@ -220,7 +274,8 @@ async function showDashboard() {
 
     await Promise.all([
       loadApplications(),
-      loadGallery()
+      loadGallery(),
+      loadJobs()
     ]);
 
   } catch {
@@ -276,14 +331,240 @@ if (logoutButton) {
   });
 }
 
-// PUBLISH VACANCY WITH OPTIONAL PHOTO AND VIDEO
+// LOAD ALL PUBLISHED AND HIDDEN VACANCIES
+async function loadJobs() {
+  const box = $("#jobsList");
+
+  if (!box) return;
+
+  box.textContent = "Loading vacancies...";
+
+  try {
+    const rows = await api("/api/admin/jobs");
+
+    if (!Array.isArray(rows) || !rows.length) {
+      box.textContent = "No vacancies have been published yet.";
+      return;
+    }
+
+    const list = document.createElement("div");
+
+    list.style.display = "grid";
+    list.style.gridTemplateColumns =
+      "repeat(auto-fit, minmax(260px, 1fr))";
+    list.style.gap = "16px";
+
+    rows.forEach((job) => {
+      const card = document.createElement("article");
+
+      card.className = "panel";
+
+      // JOB PHOTO
+      if (job.image_url) {
+        const image = document.createElement("img");
+
+        image.src = job.image_url;
+        image.alt = job.title || "Vacancy photo";
+        image.loading = "lazy";
+
+        image.style.width = "100%";
+        image.style.maxHeight = "180px";
+        image.style.objectFit = "cover";
+        image.style.borderRadius = "8px";
+
+        card.append(image);
+      }
+
+      // JOB TITLE
+      const title = document.createElement("h3");
+      title.textContent = job.title;
+
+      // LOCATION
+      const locationText = document.createElement("p");
+      locationText.textContent =
+        "Location: " + (job.location || "Not provided");
+
+      // EMPLOYMENT TYPE
+      const type = document.createElement("p");
+      type.textContent =
+        "Employment: " +
+        (job.employment_type || "Not specified");
+
+      // STATUS
+      const status = document.createElement("p");
+
+      status.textContent = job.active
+        ? "Status: Published"
+        : "Status: Hidden";
+
+      // MEDIA STATUS
+      const media = document.createElement("p");
+
+      media.textContent =
+        "Photo: " + (job.image_url ? "Available" : "None") +
+        " | Video: " + (job.video_url ? "Available" : "None");
+
+      // VIDEO LINK
+      if (job.video_url) {
+        const videoLink = document.createElement("a");
+
+        videoLink.href = job.video_url;
+        videoLink.target = "_blank";
+        videoLink.rel = "noopener noreferrer";
+        videoLink.textContent = "View job video";
+
+        videoLink.style.display = "block";
+        videoLink.style.marginBottom = "12px";
+
+        card.append(videoLink);
+      }
+
+      // EDIT BUTTON
+      const editButton = document.createElement("button");
+
+      editButton.type = "button";
+      editButton.className = "btn";
+      editButton.textContent = "Edit vacancy";
+
+      editButton.addEventListener("click", () => {
+        editJob(job);
+      });
+
+      // SHOW/HIDE BUTTON
+      const toggleButton = document.createElement("button");
+
+      toggleButton.type = "button";
+      toggleButton.className = "btn secondary";
+
+      toggleButton.textContent = job.active
+        ? "Hide vacancy"
+        : "Publish vacancy";
+
+      toggleButton.style.marginTop = "8px";
+
+      toggleButton.addEventListener("click", async () => {
+        toggleButton.disabled = true;
+
+        try {
+          await api(`/api/admin/jobs/${job.id}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+              active: !job.active
+            })
+          });
+
+          await loadJobs();
+
+        } catch (err) {
+          alert(err.message);
+          toggleButton.disabled = false;
+        }
+      });
+
+      card.append(
+        title,
+        locationText,
+        type,
+        status,
+        media,
+        editButton,
+        toggleButton
+      );
+
+      list.append(card);
+    });
+
+    box.replaceChildren(list);
+
+  } catch (err) {
+    box.textContent = err.message;
+  }
+}
+
+// EDIT EXISTING VACANCY
+function editJob(job) {
+  const form = $("#jobForm");
+
+  if (!form) return;
+
+  editingJobId = job.id;
+
+  form.elements.title.value = job.title || "";
+  form.elements.location.value = job.location || "";
+  form.elements.employmentType.value =
+    job.employment_type || "Full-time";
+
+  form.elements.description.value =
+    job.description || "";
+
+  form.elements.requirements.value =
+    job.requirements || "";
+
+  // SHOW EXISTING PHOTO
+  if (job.image_url && $("#jobPreview")) {
+    $("#jobPreview").src = job.image_url;
+    $("#jobPreview").hidden = false;
+  } else if ($("#jobPreview")) {
+    $("#jobPreview").hidden = true;
+    $("#jobPreview").removeAttribute("src");
+  }
+
+  // SHOW EXISTING VIDEO
+  if (job.video_url && jobVideoPreview) {
+    jobVideoPreview.src = job.video_url;
+    jobVideoPreview.hidden = false;
+    jobVideoPreview.load();
+  } else if (jobVideoPreview) {
+    jobVideoPreview.pause();
+    jobVideoPreview.removeAttribute("src");
+    jobVideoPreview.load();
+    jobVideoPreview.hidden = true;
+  }
+
+  if ($("#jobFormTitle")) {
+    $("#jobFormTitle").textContent =
+      "Edit vacancy #" + job.id;
+  }
+
+  if ($("#jobSubmit")) {
+    $("#jobSubmit").textContent = "Save changes";
+  }
+
+  if ($("#cancelJobEdit")) {
+    $("#cancelJobEdit").hidden = false;
+  }
+
+  msg(
+    $("#jobResult"),
+    "Editing vacancy. Select a new photo or video only if you want to replace the existing one."
+  );
+
+  msg($("#videoResult"), "");
+
+  form.scrollIntoView({
+    behavior: "smooth",
+    block: "start"
+  });
+}
+
+// CANCEL EDITING
+const cancelEditButton = $("#cancelJobEdit");
+
+if (cancelEditButton) {
+  cancelEditButton.addEventListener("click", () => {
+    resetJobEditor();
+  });
+}
+
+// PUBLISH OR UPDATE VACANCY
 const jobForm = $("#jobForm");
 
 if (jobForm) {
   jobForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const button = jobForm.querySelector('[type="submit"]');
+    const button = $("#jobSubmit") ||
+      jobForm.querySelector('[type="submit"]');
 
     const imageFile = $("#jobImage")?.files[0] || null;
     const videoFile = $("#jobVideo")?.files[0] || null;
@@ -292,26 +573,20 @@ if (jobForm) {
       new FormData(jobForm).entries()
     );
 
-    delete formData.image;
-    delete formData.video;
-
     button.disabled = true;
 
     try {
       let image = null;
       let video = null;
 
-      // UPLOAD IMAGE
+      // UPLOAD NEW PHOTO
       if (imageFile) {
-        msg(
-          $("#jobResult"),
-          "Uploading vacancy photo..."
-        );
+        msg($("#jobResult"), "Uploading vacancy photo...");
 
         image = await uploadImage(imageFile);
       }
 
-      // UPLOAD VIDEO
+      // UPLOAD NEW VIDEO
       if (videoFile) {
         msg(
           $("#videoResult"),
@@ -328,52 +603,70 @@ if (jobForm) {
 
       // PREPARE VACANCY DATA
       const payload = {
-        ...formData,
-
-        imageUrl: image ? image.url : null,
-        imagePublicId: image ? image.publicId : null,
-
-        videoUrl: video ? video.url : null,
-        videoPublicId: video ? video.publicId : null
+        title: formData.title,
+        location: formData.location,
+        employmentType: formData.employmentType,
+        description: formData.description,
+        requirements: formData.requirements
       };
 
-      msg(
-        $("#jobResult"),
-        "Publishing vacancy..."
-      );
+      // ONLY SEND MEDIA FIELDS WHEN A NEW FILE IS SELECTED
+      // This preserves existing media during editing.
+      if (image) {
+        payload.imageUrl = image.url;
+        payload.imagePublicId = image.publicId;
+      }
 
-      // SAVE VACANCY
-      await api("/api/admin/jobs", {
-        method: "POST",
-        body: JSON.stringify(payload)
-      });
+      if (video) {
+        payload.videoUrl = video.url;
+        payload.videoPublicId = video.publicId;
+      }
 
-      msg(
-        $("#jobResult"),
-        "Vacancy and its media published successfully!"
-      );
+      if (editingJobId !== null) {
+        // UPDATE EXISTING VACANCY
+        msg($("#jobResult"), "Saving vacancy changes...");
+
+        await api(`/api/admin/jobs/${editingJobId}`, {
+          method: "PATCH",
+          body: JSON.stringify(payload)
+        });
+
+        msg(
+          $("#jobResult"),
+          "Vacancy updated successfully!"
+        );
+
+      } else {
+        // PUBLISH NEW VACANCY
+        msg($("#jobResult"), "Publishing vacancy...");
+
+        // New vacancies need media fields even when no file is selected.
+        if (!image) {
+          payload.imageUrl = null;
+          payload.imagePublicId = null;
+        }
+
+        if (!video) {
+          payload.videoUrl = null;
+          payload.videoPublicId = null;
+        }
+
+        await api("/api/admin/jobs", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+
+        msg(
+          $("#jobResult"),
+          "Vacancy published successfully!"
+        );
+      }
 
       msg($("#videoResult"), "");
 
-      // RESET FORM
-      jobForm.reset();
+      resetJobEditor();
 
-      if ($("#jobPreview")) {
-        $("#jobPreview").hidden = true;
-        $("#jobPreview").removeAttribute("src");
-      }
-
-      if (jobVideoPreview) {
-        jobVideoPreview.pause();
-        jobVideoPreview.hidden = true;
-        jobVideoPreview.removeAttribute("src");
-        jobVideoPreview.load();
-      }
-
-      // RELEASE PREVIEW URL
-      if (jobVideoPreview && jobVideoInput) {
-        // The next video selection will also release its previous URL.
-      }
+      await loadJobs();
 
     } catch (err) {
       msg(
@@ -386,6 +679,16 @@ if (jobForm) {
       button.disabled = false;
     }
   });
+}
+
+// REFRESH VACANCIES
+const refreshJobsButton = $("#refreshJobs");
+
+if (refreshJobsButton) {
+  refreshJobsButton.addEventListener(
+    "click",
+    loadJobs
+  );
 }
 
 // UPLOAD HOMEPAGE GALLERY PHOTO
@@ -498,11 +801,9 @@ async function loadGallery() {
       img.style.borderRadius = "8px";
 
       const title = document.createElement("h3");
-
       title.textContent = photo.title;
 
       const description = document.createElement("p");
-
       description.textContent = photo.description || "";
 
       const status = document.createElement("p");
@@ -598,9 +899,7 @@ async function loadApplications() {
       "Submitted"
     ].forEach((t) => {
       const th = document.createElement("th");
-
       th.textContent = t;
-
       head.append(th);
     });
 
@@ -619,7 +918,6 @@ async function loadApplications() {
       c1.textContent =
         `${a.reference}\n${a.full_name}`;
 
-      // CONTACT DETAILS INCLUDING PHONE NUMBER
       const c2 = document.createElement("td");
 
       c2.textContent =
