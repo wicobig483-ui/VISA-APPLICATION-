@@ -322,7 +322,7 @@ a {
   color: var(--muted);
 }
 
-/* VACANCY CARDS */
+/* VACANCY CARDS - DEFAULT */
 
 .jobs {
   display: grid;
@@ -749,8 +749,8 @@ a:focus-visible {
 }
 
 /* =========================================
-   CORRECTED JOB VACANCY LAYOUT
-   Images/videos LEFT, job details RIGHT
+   JOB VACANCY LIST LAYOUT
+   MEDIA LEFT, DETAILS RIGHT
 ========================================= */
 
 #jobs.job-list-layout {
@@ -768,7 +768,7 @@ a:focus-visible {
   gap: 15px !important;
   width: 100% !important;
   min-width: 0 !important;
-  padding: 12px !important;
+  padding: 14px !important;
   margin: 0 !important;
   overflow: hidden !important;
   background: #ffffff !important;
@@ -782,40 +782,40 @@ a:focus-visible {
   transform: none !important;
 }
 
-/* MEDIA COLUMN */
+/* IMAGE AND VIDEO COLUMN */
 
 #jobs .job-row-card .job-media {
   display: flex !important;
-  flex: 0 0 125px !important;
+  flex: 0 0 220px !important;
   flex-direction: column !important;
   gap: 8px !important;
-  width: 125px !important;
-  max-width: 125px !important;
+  width: 220px !important;
+  max-width: 220px !important;
   min-width: 0 !important;
   overflow: hidden !important;
 }
 
-/* JOB PHOTOS AND VIDEOS */
+/* VACANCY PHOTOS AND VIDEOS */
 
 #jobs .job-row-card .job-media img,
 #jobs .job-row-card .job-media video {
   display: block !important;
   width: 100% !important;
-  height: 90px !important;
-  max-height: 90px !important;
+  height: 165px !important;
+  max-height: 165px !important;
   min-height: 0 !important;
   object-fit: cover !important;
-  border-radius: 7px !important;
+  border-radius: 8px !important;
   background: #eef1f5 !important;
 }
 
-/* VIDEO CONTROLS */
+/* VIDEO DISPLAY */
 
 #jobs .job-row-card .job-media video {
   object-fit: contain !important;
 }
 
-/* JOB DETAILS COLUMN */
+/* JOB DETAILS */
 
 #jobs .job-row-card .job-details {
   flex: 1 1 0 !important;
@@ -827,28 +827,35 @@ a:focus-visible {
 }
 
 #jobs .job-row-card .job-title {
-  margin: 0 0 6px !important;
+  margin: 0 0 7px !important;
   color: var(--navy) !important;
-  font-size: 17px !important;
+  font-size: 19px !important;
   line-height: 1.35 !important;
   overflow-wrap: anywhere !important;
 }
 
-#jobs .job-row-card .job-location,
+#jobs .job-row-card .job-location {
+  margin: 6px 0 !important;
+  color: var(--red) !important;
+  font-size: 13px !important;
+  line-height: 1.5 !important;
+  font-weight: 700 !important;
+}
+
 #jobs .job-row-card .job-description,
 #jobs .job-row-card .job-requirements {
-  margin: 6px 0 !important;
-  font-size: 12px !important;
-  line-height: 1.5 !important;
+  margin: 7px 0 !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
   overflow-wrap: anywhere !important;
 }
 
 #jobs .job-row-card .job-apply-button {
   display: inline-flex !important;
-  margin-top: 8px !important;
-  padding: 8px 13px !important;
-  min-height: 36px !important;
-  font-size: 12px !important;
+  margin-top: 9px !important;
+  padding: 9px 15px !important;
+  min-height: 38px !important;
+  font-size: 13px !important;
 }
 
 /* MOBILE LAYOUT */
@@ -856,31 +863,34 @@ a:focus-visible {
 @media (max-width: 600px) {
 
   #jobs.job-list-layout {
-    gap: 11px !important;
+    gap: 12px !important;
   }
 
   #jobs .job-row-card {
-    gap: 9px !important;
-    padding: 9px !important;
+    gap: 11px !important;
+    padding: 10px !important;
   }
 
   #jobs .job-row-card .job-media {
-    flex: 0 0 95px !important;
-    width: 95px !important;
-    max-width: 95px !important;
+    flex: 0 0 145px !important;
+    width: 145px !important;
+    max-width: 145px !important;
   }
 
   #jobs .job-row-card .job-media img,
   #jobs .job-row-card .job-media video {
-    height: 72px !important;
-    max-height: 72px !important;
+    height: 120px !important;
+    max-height: 120px !important;
   }
 
   #jobs .job-row-card .job-title {
-    font-size: 14px !important;
+    font-size: 15px !important;
   }
 
-  #jobs .job-row-card .job-location,
+  #jobs .job-row-card .job-location {
+    font-size: 11px !important;
+  }
+
   #jobs .job-row-card .job-description,
   #jobs .job-row-card .job-requirements {
     font-size: 11px !important;
@@ -898,24 +908,24 @@ a:focus-visible {
 @media (max-width: 350px) {
 
   #jobs .job-row-card {
-    gap: 7px !important;
-    padding: 7px !important;
+    gap: 8px !important;
+    padding: 8px !important;
   }
 
   #jobs .job-row-card .job-media {
-    flex-basis: 78px !important;
-    width: 78px !important;
-    max-width: 78px !important;
+    flex: 0 0 115px !important;
+    width: 115px !important;
+    max-width: 115px !important;
   }
 
   #jobs .job-row-card .job-media img,
   #jobs .job-row-card .job-media video {
-    height: 65px !important;
-    max-height: 65px !important;
+    height: 100px !important;
+    max-height: 100px !important;
   }
 
   #jobs .job-row-card .job-title {
-    font-size: 12px !important;
+    font-size: 13px !important;
   }
 
   #jobs .job-row-card .job-description,
