@@ -49,15 +49,15 @@
         <h1>Admin dashboard</h1>
       </div>
 
-      <button id="logout" class="btn secondary">
+      <button id="logout" class="btn secondary" type="button">
         Sign out
       </button>
     </div>
 
-    <!-- PUBLISH VACANCY -->
+    <!-- PUBLISH OR EDIT VACANCY -->
     <section class="panel">
 
-      <h2>Publish a vacancy</h2>
+      <h2 id="jobFormTitle">Publish a vacancy</h2>
 
       <form id="jobForm" class="form-grid">
 
@@ -145,6 +145,7 @@
 
           <p class="muted">
             Maximum video size: 100 MB. Video upload is optional.
+            When editing, leave this empty to keep the existing video.
           </p>
 
           <video
@@ -163,11 +164,24 @@
 
         </div>
 
-        <!-- PUBLISH BUTTON -->
+        <!-- FORM BUTTONS -->
         <div class="full">
 
-          <button class="btn" type="submit">
+          <button
+            id="jobSubmit"
+            class="btn"
+            type="submit"
+          >
             Publish vacancy
+          </button>
+
+          <button
+            id="cancelJobEdit"
+            class="btn secondary"
+            type="button"
+            hidden
+          >
+            Cancel editing
           </button>
 
           <p
@@ -179,6 +193,30 @@
         </div>
 
       </form>
+
+    </section>
+
+    <!-- MANAGE PUBLISHED VACANCIES -->
+    <section class="section">
+
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">VACANCY MANAGEMENT</p>
+          <h2>Manage published vacancies</h2>
+        </div>
+
+        <button
+          class="btn secondary"
+          id="refreshJobs"
+          type="button"
+        >
+          Refresh vacancies
+        </button>
+      </div>
+
+      <div id="jobsList" class="table-wrap">
+        <p>Loading vacancies...</p>
+      </div>
 
     </section>
 
