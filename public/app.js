@@ -161,7 +161,6 @@ async function loadGalleryPhotos() {
     gallery.replaceChildren(createElement("p", "error", error.message));
   }
 }
-
 function showPaymentInstructions(target, data) {
   if (!target) return;
 
@@ -172,11 +171,18 @@ function showPaymentInstructions(target, data) {
     target.appendChild(document.createElement("br"));
   };
 
-  addLine(data.message || "Your application has been received.", "success");
+addLine(data.message || "Your application has been received.", "success");
   addLine(`Your application reference: ${data.reference}`, "application-reference");
+  
+const paymentSection = document.getElementById("paymentSection");
+
+if (paymentSection && data.paymentUrl) {
+  document.getElementById("paypalPaymentButton").href = data.paymentUrl;
+  paymentSection.hidden = false;
+}
   addLine(`Agency application-processing fee: ${data.processingFee || "USD 40"}`, "processing-fee");
   addLine(
-    data.paymentNotice || "This is an agency processing fee, not a Canadian government or IRCC visa fee. Payment does not guarantee employment or visa approval.",
+    data.paymentNotice || "This is an agency processing fee,a Canadian government or IRCC visa fee. Payment does not guarantee employment or visa approval.",
     "payment-disclaimer"
   );
   addLine(
