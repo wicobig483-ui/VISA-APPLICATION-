@@ -43,6 +43,8 @@
     </div>
   </section>
 
+  <!-- AVAILABLE VACANCIES -->
+
   <section id="vacancies" class="section">
     <div class="section-head">
       <div>
@@ -51,6 +53,7 @@
       </div>
       <button class="btn secondary" id="reloadJobs">Refresh</button>
     </div>
+
     <div id="jobs" class="jobs">
       <p>Loading vacancies…</p>
     </div>
@@ -61,7 +64,10 @@
   <section id="apply" class="section panel">
     <p class="eyebrow">APPLICANT REGISTRATION</p>
     <h2>Submit your application</h2>
-    <p class="muted">Provide accurate information. Do not submit bank details or identity documents through this form.</p>
+
+    <p class="muted">
+      Provide accurate information. Do not submit bank details or identity documents through this form.
+    </p>
 
     <form id="applicationForm" class="form-grid">
 
@@ -174,9 +180,12 @@
 
 </main>
 
+<!-- FOOTER -->
+
 <footer>
   <div class="wrap">
     <p><strong>External privacy policy reference:</strong></p>
+
     <p>
       The Treasury Board of Canada Secretariat Policy on Privacy Protection
       defines administrative purpose as the use of personal information about
@@ -185,6 +194,7 @@
       identity (i.e. authentication and verification purposes) and for
       determining eligibility of individuals for government programs.
     </p>
+
     <p>
       This is an external policy reference and does not mean this independent
       recruitment service is affiliated with the Government of Canada or IRCC.
@@ -192,29 +202,9 @@
   </div>
 </footer>
 
+<!-- WEBSITE JAVASCRIPT -->
+
 <script src="/app.js"></script>
 
 </body>
-  
-<section id="paymentSection" hidden style="max-width:600px;margin:30px auto;padding:24px;border:1px solid #ddd;border-radius:12px;text-align:center;">
-  <h2>Application Processing Fee</h2>
-  <h3>$40 USD</h3>
-  <p>
-    This is an agency application-processing fee,
-    not an official Canadian government or IRCC visa fee.
-  </p>
-  <p>Payment does not guarantee employment or visa approval.</p>
-  <a
-    id="paypalPaymentButton"
-    href="https://www.paypal.com/ncp/payment/BPZVY3EVXS2S4"
-    target="_blank"
-    rel="noopener noreferrer"
-    style="display:inline-block;background:#0070ba;color:white;padding:14px 25px;border-radius:7px;text-decoration:none;font-weight:bold;"
-  >
-    Pay $40 USD with PayPal
-  </a>
-  <p style="font-size:13px;color:#666;">
-    Keep your application reference for payment records.
-  </p>
-</section>
 </html>
