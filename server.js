@@ -1,4 +1,3 @@
-
 const express = require("express");
 const helmet = require("helmet");
 const session = require("express-session");
@@ -162,7 +161,7 @@ app.use(express.urlencoded({ extended: false, limit: "30kb" }));
 app.use(
   session({
     store: new pgSession({
-      pool, it
+      pool,
       createTableIfMissing: true,
       tableName: "user_sessions"
     }),
@@ -311,53 +310,10 @@ function escapeHtml(value) {
     "'": "&#39;"
   })[char]);
 }
-  // =====================================
-// GENERAL HELPERS
-// =====================================
-
-function clean(value, max = 500) {
-  return String(value ?? "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .slice(0, max);
-}
-
-function validEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
-
-function validPhone(phone) {
-  const digits = phone.replace(/\D/g, "");
-  return (
-    /^[+]?[0-9\s().-]+$/.test(phone) &&
-    digits.length >= 7 &&
-    digits.length <= 15
-  );
-}
-
-function adminOnly(req, res, next) {
-  if (!req.session || req.session.isAdmin !== true) {
-    return res.status(401).json({
-      error: "Please sign in as an administrator."
-    });
-  }
-  next();
-}
-
-function escapeHtml(value) {
-  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;"
-  })[char]);
-}
 
 // =====================================
 // PUBLIC: LIST ACTIVE JOBS
 // =====================================
-
 app.get("/api/jobs", async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -592,9 +548,11 @@ app.post("/api/admin/logout", adminOnly, (req, res) => {
 app.get("/api/admin/me", adminOnly, (_req, res) => {
   res.json({ authenticated: true });
 });
+
 // =====================================
 // ADMIN: LIST APPLICATIONS
 // =====================================
+
 app.get("/api/admin/applications", adminOnly, async (_req, res) => {
   try {
     const result = await pool.query(
@@ -607,10 +565,13 @@ app.get("/api/admin/applications", adminOnly, async (_req, res) => {
        ORDER BY a.created_at DESC
        LIMIT 500`
     );
+
     res.json(result.rows);
   } catch (err) {
     console.error("Admin applications error:", err);
-    res.status(500).json({ error: "Unable to load applications." });
+    res.status(500).json({
+      error: "Unable to load applications."
+    });
   }
 });
 
@@ -658,6 +619,7 @@ async function sendApplicantEmail({ to, subject, html, text }) {
   if (!response.ok) {
     const detail =
       result.message || result.error || responseText || response.statusText;
+
     throw new Error(
       `Resend rejected the email (${response.status}): ${detail}`
     );
@@ -757,11 +719,15 @@ app.patch(
     const status = clean(req.body.status, 40);
 
     if (!Number.isSafeInteger(id) || id < 1) {
-      return res.status(400).json({ error: "Invalid application ID." });
+      return res.status(400).json({
+        error: "Invalid application ID."
+      });
     }
 
     if (!allowedApplicationStatuses.includes(status)) {
-      return res.status(400).json({ error: "Invalid application status." });
+      return res.status(400).json({
+        error: "Invalid application status."
+      });
     }
 
     let application;
@@ -782,7 +748,9 @@ app.patch(
 
       if (!existing.rowCount) {
         await client.query("ROLLBACK");
-        return res.status(404).json({ error: "Application not found." });
+        return res.status(404).json({
+          error: "Application not found."
+        });
       }
 
       const current = existing.rows[0];
@@ -833,6 +801,7 @@ app.patch(
     if (shouldSendEmail) {
       try {
         await sendUnderReviewEmail(application);
+
         await pool.query(
           `UPDATE applications
            SET under_review_email_sent_at = NOW()
@@ -866,7 +835,6 @@ app.patch(
 // =====================================
 // ADMIN: LIST ALL VACANCIES
 // =====================================
-
 app.get("/api/admin/jobs", adminOnly, async (_req, res) => {
   try {
     const result = await pool.query(`
@@ -882,9 +850,12 @@ app.get("/api/admin/jobs", adminOnly, async (_req, res) => {
     })));
   } catch (err) {
     console.error("Admin jobs error:", err);
-    res.status(500).json({ error: "Unable to load vacancies." });
+    res.status(500).json({
+      error: "Unable to load vacancies."
+    });
   }
 });
+
 // =====================================
 // ADMIN: CREATE VACANCY
 // =====================================
@@ -895,11 +866,31 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
     const location = clean(req.body.location, 150);
     const description = clean(req.body.description, 5000);
     const requirements = clean(req.body.requirements, 3000);
-    const employmentType = clean(req.body.employment_type, 80);
-    const imageUrl = clean(req.body.image_url, 1000);
-    const imagePublicId = clean(req.body.image_public_id, 255);
-    const videoUrl = clean(req.body.video_url, 1000);
-    const videoPublicId = clean(req.body.video_public_id, 255);
+
+    const employmentType = clean(
+      req.body.employmentType ?? req.body.employment_type ?? "Full-time",
+      80
+    );
+
+    const imageUrl = clean(
+      req.body.imageUrl ?? req.body.image_url,
+      1000
+    );
+
+    const imagePublicId = clean(
+      req.body.imagePublicId ?? req.body.image_public_id,
+      255
+    );
+
+    const videoUrl = clean(
+      req.body.videoUrl ?? req.body.video_url,
+      1000
+    );
+
+    const videoPublicId = clean(
+      req.body.videoPublicId ?? req.body.video_public_id,
+      255
+    );
 
     if (!title || !location || !description) {
       return res.status(400).json({
@@ -922,7 +913,7 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
         imageUrl,
         imagePublicId,
         videoUrl,
-        videoPublicId 
+        videoPublicId
       ]
     );
 
@@ -937,7 +928,8 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
     });
   }
 });
-  // =====================================
+
+// =====================================
 // ADMIN: IMAGE UPLOAD
 // =====================================
 
@@ -1050,10 +1042,12 @@ app.patch("/api/admin/jobs/:id", adminOnly, async (req, res) => {
         : old.employment_type;
 
     const imageUrl = body.imageUrl ?? body.image_url ?? old.image_url;
+
     const imagePublicId =
       body.imagePublicId ?? body.image_public_id ?? old.image_public_id;
 
     const videoUrl = body.videoUrl ?? body.video_url ?? old.video_url;
+
     const videoPublicId =
       body.videoPublicId ?? body.video_public_id ?? old.video_public_id;
 
@@ -1116,7 +1110,12 @@ app.post("/api/admin/gallery", adminOnly, async (req, res) => {
   try {
     const title = clean(req.body.title, 150);
     const description = clean(req.body.description, 1000);
-    const imageUrl = clean(req.body.imageUrl || req.body.image_url, 1000);
+
+    const imageUrl = clean(
+      req.body.imageUrl || req.body.image_url,
+      1000
+    );
+
     const imagePublicId = clean(
       req.body.imagePublicId || req.body.image_public_id,
       255
@@ -1220,10 +1219,7 @@ app.patch("/api/admin/gallery/:id", adminOnly, async (req, res) => {
     });
   }
 });
-});
-// =====================================
-// SERVE WEBSITE FILES
-// =====================================
+
 // =====================================
 // SERVE WEBSITE FILES
 // =====================================
