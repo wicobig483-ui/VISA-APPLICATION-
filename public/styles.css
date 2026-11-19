@@ -934,3 +934,45 @@ a:focus-visible {
     font-size: 10px !important;
   }
 }
+
+/* =================================
+   FLOATING WHATSAPP HELPLINE
+================================= */
+
+.whatsapp-helpline {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 13px 20px;
+  background: #25D366;
+  color: #ffffff !important;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none !important;
+  border-radius: 50px;
+  box-shadow: 0 5px 18px rgba(0, 0, 0, 0.25);
+  transition: background 0.2s, transform 0.2s;
+}
+
+.whatsapp-helpline:hover {
+  background: #128C7E;
+  transform: translateY(-3px);
+}
+
+.whatsapp-icon {
+  font-size: 21px;
+}
+
+@media (max-width: 600px) {
+  .whatsapp-helpline {
+    right: 12px;
+    bottom: 15px;
+    padding: 11px 15px;
+    font-size: 13px;
+  }
+}
