@@ -1,4 +1,3 @@
-
 "use strict";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -69,34 +68,56 @@ function addMedia(card, url, type, altText) {
   card.appendChild(image);
 }
 
-function renderJob(job) {
-  const card = createElement("article", "job-card");
+/* CORRECTED VACANCY LAYOUT */
 
-  const title = createElement(
-    "h3",
-    "job-title",
-    job.title || "Vacancy"
+function renderJob(job) {
+  const card = createElement("article", "job-row-card");
+
+  const media = createElement("div", "job-media");
+  const details = createElement("div", "job-details");
+
+  // Keep vacancy image and video together on the left.
+  addMedia(
+    media,
+    job.image_url,
+    "image",
+    `${job.title || "Job"} image`
   );
 
-  card.appendChild(title);
+  addMedia(
+    media,
+    job.video_url,
+    "video",
+    `${job.title || "Job"} video`
+  );
+
+  if (media.childElementCount > 0) {
+    card.appendChild(media);
+  }
+
+  // Keep vacancy information on the right.
+  details.appendChild(
+    createElement(
+      "h3",
+      "job-title",
+      job.title || "Vacancy"
+    )
+  );
 
   if (job.location) {
-    card.appendChild(
+    details.appendChild(
       createElement("p", "job-location", job.location)
     );
   }
 
   if (job.employment_type) {
-    card.appendChild(
+    details.appendChild(
       createElement("p", "job-type", job.employment_type)
     );
   }
 
-  addMedia(card, job.image_url, "image", `${job.title || "Job"} image`);
-  addMedia(card, job.video_url, "video", `${job.title || "Job"} video`);
-
   if (job.description) {
-    card.appendChild(
+    details.appendChild(
       createElement("p", "job-description", job.description)
     );
   }
@@ -110,12 +131,12 @@ function renderJob(job) {
       document.createTextNode(job.requirements)
     );
 
-    card.appendChild(requirements);
+    details.appendChild(requirements);
   }
 
   const applyButton = createElement(
     "button",
-    "apply-job-button",
+    "job-apply-button",
     "Apply for this job"
   );
 
@@ -135,16 +156,22 @@ function renderJob(job) {
     }
   });
 
-  card.appendChild(applyButton);
+  details.appendChild(applyButton);
+
+  card.appendChild(details);
 
   return card;
 }
+
+/* LOAD VACANCIES */
 
 async function loadJobs() {
   const jobsContainer = $("#jobs");
   const jobSelect = $("#jobSelect");
 
   if (!jobsContainer) return;
+
+  jobsContainer.classList.add("job-list-layout");
 
   jobsContainer.replaceChildren(
     createElement("p", "loading", "Loading vacancies…")
@@ -201,12 +228,15 @@ async function loadJobs() {
         jobSelect.value = previousValue;
       }
     }
+
   } catch (error) {
     jobsContainer.replaceChildren(
       createElement("p", "error", error.message)
     );
   }
 }
+
+/* LOAD GALLERY PHOTOS */
 
 async function loadGalleryPhotos() {
   const gallery = $("#canadaGalleryGrid");
@@ -253,6 +283,7 @@ async function loadGalleryPhotos() {
 
       gallery.appendChild(item);
     });
+
   } catch (error) {
     gallery.replaceChildren(
       createElement("p", "error", error.message)
