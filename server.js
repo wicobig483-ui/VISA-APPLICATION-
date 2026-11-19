@@ -162,7 +162,7 @@ app.use(express.urlencoded({ extended: false, limit: "30kb" }));
 app.use(
   session({
     store: new pgSession({
-      pool,
+      pool, it
       createTableIfMissing: true,
       tableName: "user_sessions"
     }),
@@ -922,7 +922,7 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
         imageUrl,
         imagePublicId,
         videoUrl,
-        videoPublicId
+        videoPublicId 
       ]
     );
 
@@ -937,7 +937,293 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
     });
   }
 });
+  // =====================================
+// ADMIN: IMAGE UPLOAD
+// =====================================
 
+app.post(
+  "/api/admin/uploads",
+  adminOnly,
+  (req, res, next) => {
+    upload.single("image")(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          error: err.message || "Image upload failed."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          error: "Please select an image."
+        });
+      }
+
+      res.json({
+        image: {
+          url: req.file.path,
+          publicId: req.file.filename
+        }
+      });
+    });
+  }
+);
+
+// =====================================
+// ADMIN: VIDEO UPLOAD
+// =====================================
+
+app.post(
+  "/api/admin/video-uploads",
+  adminOnly,
+  (req, res, next) => {
+    videoUpload.single("video")(req, res, (err) => {
+      if (err) {
+        return res.status(400).json({
+          error: err.message || "Video upload failed."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          error: "Please select a video."
+        });
+      }
+
+      res.json({
+        video: {
+          url: req.file.path,
+          publicId: req.file.filename
+        }
+      });
+    });
+  }
+);
+
+// =====================================
+// ADMIN: UPDATE VACANCY
+// =====================================
+
+app.patch("/api/admin/jobs/:id", adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id < 1) {
+      return res.status(400).json({
+        error: "Invalid vacancy ID."
+      });
+    }
+
+    const existing = await pool.query(
+      "SELECT * FROM jobs WHERE id = $1",
+      [id]
+    );
+
+    if (!existing.rows.length) {
+      return res.status(404).json({
+        error: "Vacancy not found."
+      });
+    }
+
+    const old = existing.rows[0];
+    const body = req.body || {};
+
+    const title = body.title !== undefined
+      ? clean(body.title, 150)
+      : old.title;
+
+    const location = body.location !== undefined
+      ? clean(body.location, 150)
+      : old.location;
+
+    const description = body.description !== undefined
+      ? clean(body.description, 5000)
+      : old.description;
+
+    const requirements = body.requirements !== undefined
+      ? clean(body.requirements, 3000)
+      : old.requirements;
+
+    const employmentType = body.employmentType !== undefined
+      ? clean(body.employmentType, 80)
+      : body.employment_type !== undefined
+        ? clean(body.employment_type, 80)
+        : old.employment_type;
+
+    const imageUrl = body.imageUrl ?? body.image_url ?? old.image_url;
+    const imagePublicId =
+      body.imagePublicId ?? body.image_public_id ?? old.image_public_id;
+
+    const videoUrl = body.videoUrl ?? body.video_url ?? old.video_url;
+    const videoPublicId =
+      body.videoPublicId ?? body.video_public_id ?? old.video_public_id;
+
+    const active = typeof body.active === "boolean"
+      ? body.active
+      : old.active;
+
+    if (!title || !location || !description) {
+      return res.status(400).json({
+        error: "Title, location, and description are required."
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE jobs
+       SET title = $1,
+           location = $2,
+           description = $3,
+           requirements = $4,
+           employment_type = $5,
+           image_url = $6,
+           image_public_id = $7,
+           video_url = $8,
+           video_public_id = $9,
+           active = $10
+       WHERE id = $11
+       RETURNING *`,
+      [
+        title,
+        location,
+        description,
+        requirements,
+        employmentType,
+        imageUrl,
+        imagePublicId,
+        videoUrl,
+        videoPublicId,
+        active,
+        id
+      ]
+    );
+
+    res.json({
+      message: "Vacancy updated successfully.",
+      job: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Vacancy update error:", err);
+    res.status(500).json({
+      error: "Unable to update vacancy."
+    });
+  }
+});
+
+// =====================================
+// ADMIN: ADD GALLERY PHOTO
+// =====================================
+
+app.post("/api/admin/gallery", adminOnly, async (req, res) => {
+  try {
+    const title = clean(req.body.title, 150);
+    const description = clean(req.body.description, 1000);
+    const imageUrl = clean(req.body.imageUrl || req.body.image_url, 1000);
+    const imagePublicId = clean(
+      req.body.imagePublicId || req.body.image_public_id,
+      255
+    );
+
+    if (!title || !imageUrl) {
+      return res.status(400).json({
+        error: "A title and image are required."
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO gallery_photos
+       (title, description, image_url, image_public_id, active)
+       VALUES ($1, $2, $3, $4, TRUE)
+       RETURNING *`,
+      [title, description, imageUrl, imagePublicId]
+    );
+
+    res.status(201).json({
+      message: "Gallery photo published successfully.",
+      photo: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Gallery creation error:", err);
+    res.status(500).json({
+      error: "Unable to publish gallery photo."
+    });
+  }
+});
+
+// =====================================
+// ADMIN: LIST GALLERY PHOTOS
+// =====================================
+
+app.get("/api/admin/gallery", adminOnly, async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT *
+       FROM gallery_photos
+       ORDER BY created_at DESC`
+    );
+
+    res.json(result.rows.map((photo) => ({
+      ...photo,
+      image_url: optimizedImageUrl(
+        photo.image_public_id,
+        photo.image_url
+      )
+    })));
+  } catch (err) {
+    console.error("Admin gallery error:", err);
+    res.status(500).json({
+      error: "Unable to load gallery."
+    });
+  }
+});
+
+// =====================================
+// ADMIN: SHOW OR HIDE GALLERY PHOTO
+// =====================================
+
+app.patch("/api/admin/gallery/:id", adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id < 1) {
+      return res.status(400).json({
+        error: "Invalid gallery photo ID."
+      });
+    }
+
+    if (typeof req.body.active !== "boolean") {
+      return res.status(400).json({
+        error: "Invalid gallery status."
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE gallery_photos
+       SET active = $1
+       WHERE id = $2
+       RETURNING *`,
+      [req.body.active, id]
+    );
+
+    if (!result.rows.length) {
+      return res.status(404).json({
+        error: "Gallery photo not found."
+      });
+    }
+
+    res.json({
+      message: "Gallery photo updated successfully.",
+      photo: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Gallery update error:", err);
+    res.status(500).json({
+      error: "Unable to update gallery photo."
+    });
+  }
+});
+});
+// =====================================
+// SERVE WEBSITE FILES
+// =====================================
 // =====================================
 // SERVE WEBSITE FILES
 // =====================================
