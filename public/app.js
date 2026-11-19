@@ -56,7 +56,7 @@ const canadaInformation = [
   {
     title: "Jobs and employment",
     description:
-      "Learn how to search for jobs, prepare a Canadian-style résumé, understand job requirements and explore employment opportunities.",
+      "Learn how to search for jobs, prepare a Canadian-style résumé and explore employment opportunities.",
     topics: [
       {
         title: "Finding a job in Canada",
@@ -68,7 +68,7 @@ const canadaInformation = [
             url: "https://www.jobbank.gc.ca/home"
           },
           {
-            label: "Government of Canada job-search guidance",
+            label: "Government job-search information",
             url: "https://www.canada.ca/en/services/jobs/opportunities.html"
           }
         ]
@@ -97,7 +97,6 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "Work permits and working in Canada",
     description:
@@ -106,7 +105,7 @@ const canadaInformation = [
       {
         title: "What is a work permit?",
         text:
-          "A work permit is an authorization that allows an eligible foreign national to work in Canada under the conditions stated on the permit. Most foreign nationals need a work permit to work in Canada, although some exemptions exist.",
+          "A work permit is an authorization that allows an eligible foreign national to work in Canada under the conditions stated on the permit. Most foreign nationals need a work permit, although some exemptions exist.",
         links: [
           {
             label: "Official work permit information",
@@ -120,7 +119,7 @@ const canadaInformation = [
           "An employer-specific work permit generally identifies the employer, location and type of work permitted. The applicant must meet the applicable requirements.",
         links: [
           {
-            label: "Employer-specific work permits",
+            label: "Work permit information",
             url: "https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/permit.html"
           }
         ]
@@ -138,7 +137,6 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "LMIA and employer requirements",
     description:
@@ -147,7 +145,7 @@ const canadaInformation = [
       {
         title: "What is an LMIA?",
         text:
-          "A Labour Market Impact Assessment is a document that an employer may need from Employment and Social Development Canada before hiring a temporary foreign worker. A positive LMIA generally indicates that the employer can hire a foreign worker for the position under the applicable program.",
+          "A Labour Market Impact Assessment is a document that an employer may need from Employment and Social Development Canada before hiring a temporary foreign worker. A positive LMIA generally indicates that the employer can hire a foreign worker under the applicable program.",
         links: [
           {
             label: "Temporary Foreign Worker Program",
@@ -158,10 +156,10 @@ const canadaInformation = [
       {
         title: "Does every job require an LMIA?",
         text:
-          "No. Some work permit categories are LMIA-exempt. Whether an LMIA is required depends on the job, the employer and the immigration program.",
+          "No. Some work permit categories are LMIA-exempt. Whether an LMIA is required depends on the job, employer and immigration program.",
         links: [
           {
-            label: "LMIA-exempt work permits",
+            label: "Work permit information",
             url: "https://www.canada.ca/en/immigration-refugees-citizenship/services/work-canada/permit.html"
           }
         ]
@@ -173,7 +171,6 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "Immigration and citizenship",
     description:
@@ -225,16 +222,15 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "Salary, occupations and qualifications",
     description:
-      "Research Canadian occupations, typical wages, job duties and the qualifications employers may request.",
+      "Research Canadian occupations, typical wages, job duties and qualifications employers may request.",
     topics: [
       {
         title: "Explore occupations",
         text:
-          "Compare occupations and review job duties, skills, education requirements and employment information before choosing a career path.",
+          "Compare occupations and review job duties, skills, education requirements and employment information.",
         links: [
           {
             label: "Explore careers on Job Bank",
@@ -266,7 +262,6 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "Studying in Canada",
     description:
@@ -296,7 +291,6 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "Visitor visas and travel",
     description:
@@ -326,7 +320,6 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "Worker rights and workplace safety",
     description:
@@ -361,7 +354,6 @@ const canadaInformation = [
       }
     ]
   },
-
   {
     title: "Government services and benefits",
     description:
@@ -404,8 +396,14 @@ const canadaInformation = [
   }
 ];
 
+/* BUILD INFORMATION LINKS */
+
 function createOfficialLink(link) {
-  const anchor = createElement("a", "information-source-link", link.label);
+  const anchor = createElement(
+    "a",
+    "information-source-link",
+    link.label
+  );
 
   anchor.href = link.url;
   anchor.target = "_blank";
@@ -414,16 +412,15 @@ function createOfficialLink(link) {
   return anchor;
 }
 
+/* DISPLAY INFORMATION CENTRE */
+
 function renderInformationCentre() {
   if ($("#canada-information")) return;
 
   const section = createElement("section", "canada-information");
   section.id = "canada-information";
 
-  const heading = createElement(
-    "div",
-    "information-heading"
-  );
+  const heading = createElement("div", "information-heading");
 
   heading.appendChild(
     createElement("p", "section-kicker", "INFORMATION AND SERVICES")
@@ -452,27 +449,32 @@ function renderInformationCentre() {
   canadaInformation.forEach((category, index) => {
     const card = createElement("article", "information-card");
 
-    const number = createElement(
-      "span",
-      "information-number",
-      String(index + 1).padStart(2, "0")
+    card.appendChild(
+      createElement(
+        "span",
+        "information-number",
+        String(index + 1).padStart(2, "0")
+      )
     );
-
-    card.appendChild(number);
 
     card.appendChild(
       createElement("h3", "information-card-title", category.title)
     );
 
     card.appendChild(
-      createElement("p", "information-card-description", category.description)
+      createElement(
+        "p",
+        "information-card-description",
+        category.description
+      )
     );
 
     category.topics.forEach(topic => {
       const details = createElement("details", "information-topic");
-      const summary = createElement("summary", "", topic.title);
 
-      details.appendChild(summary);
+      details.appendChild(
+        createElement("summary", "", topic.title)
+      );
 
       details.appendChild(
         createElement("p", "information-topic-text", topic.text)
@@ -506,7 +508,7 @@ function renderInformationCentre() {
     createElement(
       "p",
       "",
-      "This recruitment portal provides general information for applicants. It is not a Government of Canada or Immigration, Refugees and Citizenship Canada website. Information is summarized for convenience and may change. Always confirm current requirements, application procedures and fees through official government sources."
+      "This website provides general information about Canadian jobs, immigration and public services. Information is summarized for convenience and may change. Always confirm current requirements, application procedures and fees through official government sources."
     )
   );
 
@@ -522,7 +524,7 @@ function renderInformationCentre() {
 
   const jobsSection = $("#jobs");
 
-  if (jobsSection) {
+  if (jobsSection && jobsSection.parentNode) {
     jobsSection.parentNode.insertBefore(section, jobsSection);
   } else {
     const hero = $(".hero");
@@ -537,20 +539,21 @@ function renderInformationCentre() {
   addInformationNavigationLink();
 }
 
+/* ADD NAVIGATION LINK */
+
 function addInformationNavigationLink() {
   const navigation = $(".main-navigation");
 
-  if (!navigation || navigation.querySelector('[href="#canada-information"]')) {
+  if (
+    !navigation ||
+    navigation.querySelector('[href="#canada-information"]')
+  ) {
     return;
   }
 
-  const link = createElement(
-    "a",
-    "",
-    "Canada information"
-  );
-
+  const link = createElement("a", "", "Canada information");
   link.href = "#canada-information";
+
   navigation.appendChild(link);
 }
 
@@ -563,19 +566,23 @@ function addMedia(card, url, type, altText) {
 
   if (type === "video") {
     const video = createElement("video", "job-video");
+
     video.src = url;
     video.controls = true;
     video.preload = "metadata";
     video.playsInline = true;
     video.setAttribute("aria-label", altText || "Vacancy video");
+
     card.appendChild(video);
     return;
   }
 
   const image = createElement("img", "job-image");
+
   image.src = url;
   image.alt = altText || "Job image";
   image.loading = "lazy";
+
   card.appendChild(image);
 }
 
@@ -589,19 +596,8 @@ function renderJob(job) {
   const media = createElement("div", "job-media");
   const details = createElement("div", "job-details");
 
-  addMedia(
-    media,
-    job.image_url,
-    "image",
-    `${job.title || "Job"} image`
-  );
-
-  addMedia(
-    media,
-    job.video_url,
-    "video",
-    `${job.title || "Job"} video`
-  );
+  addMedia(media, job.image_url, "image", `${job.title || "Job"} image`);
+  addMedia(media, job.video_url, "video", `${job.title || "Job"} video`);
 
   if (media.childElementCount > 0) {
     card.appendChild(media);
@@ -632,10 +628,8 @@ function renderJob(job) {
   if (job.requirements) {
     const requirements = createElement("p", "job-requirements");
 
-    const label = createElement("strong", "", "Requirements: ");
-
     requirements.append(
-      label,
+      createElement("strong", "", "Requirements: "),
       document.createTextNode(job.requirements)
     );
 
@@ -665,7 +659,6 @@ function renderJob(job) {
   });
 
   details.appendChild(applyButton);
-
   card.appendChild(details);
 
   return card;
@@ -734,13 +727,10 @@ async function loadJobs() {
           option.value = String(job.id);
           jobSelect.appendChild(option);
         });
-      }
 
-      if (
-        Array.isArray(jobs) &&
-        jobs.some(job => String(job.id) === previousValue)
-      ) {
-        jobSelect.value = previousValue;
+        if (jobs.some(job => String(job.id) === previousValue)) {
+          jobSelect.value = previousValue;
+        }
       }
     }
 
@@ -873,7 +863,7 @@ function showPaymentInstructions(target, data) {
 }
 
 /* =========================================
-   RELOAD VACANCIES BUTTON
+   RELOAD VACANCIES
 ========================================= */
 
 const reloadJobsButton = $("#reloadJobs");
