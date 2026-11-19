@@ -4,209 +4,598 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <meta name="description" content="Explore employment opportunities in Canada and submit your recruitment profile.">
+
+  <meta name="theme-color" content="#26394c">
+
   <title>Canada Employment Opportunities | Recruitment Portal</title>
+
   <link rel="stylesheet" href="/styles.css">
 </head>
 
 <body>
 
+<!-- =================================
+     WEBSITE HEADER
+================================= -->
+
 <header class="top">
-  <div class="wrap nav">
-    <a class="brand" href="/">Canada Employment Portal</a>
-    <nav>
-      <a href="#vacancies">Vacancies</a>
-      <a href="#apply">Apply</a>
-      <a href="#track">Track application</a>
-      <a href="/admin.html">Admin</a>
-    </nav>
+
+  <div class="wrap">
+
+    <div class="official-header">
+
+      <a href="/" class="brand-logo">
+        <span class="brand-symbol">🍁</span>
+
+        <span class="brand-name">
+          <strong>CANADA</strong>
+          <small>EMPLOYMENT PORTAL</small>
+        </span>
+      </a>
+
+      <span class="header-language">EN</span>
+
+    </div>
+
+    <!-- WEBSITE SEARCH -->
+
+    <form class="website-search" id="websiteSearch">
+
+      <input
+        type="search"
+        id="jobSearch"
+        placeholder="Search available jobs"
+        aria-label="Search available jobs"
+      >
+
+      <button type="submit" aria-label="Search">
+        🔍
+      </button>
+
+    </form>
+
+    <!-- NAVIGATION -->
+
+    <div class="navigation-bar">
+
+      <a href="/" class="menu-label">MENU ☰</a>
+
+      <nav class="main-navigation">
+
+        <a href="/">Home</a>
+
+        <a href="#vacancies">Jobs</a>
+
+        <a href="#apply">Apply</a>
+
+        <a href="#track">Track application</a>
+
+        <a href="/admin.html">Admin</a>
+
+      </nav>
+
+    </div>
+
   </div>
+
 </header>
 
-<main class="wrap">
+
+<main>
+
+  <!-- =================================
+       WELCOME SECTION
+  ================================= -->
 
   <section class="hero">
-    <p class="eyebrow">RECRUITMENT SERVICE</p>
-    <h1>Find your next employment opportunity in Canada.</h1>
-    <p>Explore published vacancies and submit your profile for recruitment consideration.</p>
-    <a class="btn" href="#vacancies">View vacancies</a>
-  </section>
 
-  <!-- CANADA PHOTO GALLERY -->
+    <div class="wrap">
 
-  <section class="canada-gallery">
-    <h2>Discover Opportunities in Canada</h2>
-    <p>Explore life, work and opportunities across Canada.</p>
+      <p class="eyebrow">RECRUITMENT SERVICES</p>
 
-    <div class="canada-gallery-grid" id="canadaGalleryGrid">
-      <p>Loading gallery photos...</p>
+      <h1>
+        Canada Employment Portal
+      </h1>
+
+      <div class="hero-underline"></div>
+
+      <p class="hero-description">
+        Explore employment opportunities, discover available
+        vacancies and submit your profile for recruitment consideration.
+      </p>
+
+      <a href="#vacancies" class="btn">
+        Explore available jobs
+      </a>
+
     </div>
+
   </section>
 
-  <!-- AVAILABLE VACANCIES -->
+
+  <!-- =================================
+       MOST REQUESTED
+  ================================= -->
+
+  <section class="most-requested">
+
+    <div class="wrap">
+
+      <h2>Most requested</h2>
+
+      <div class="requested-links">
+
+        <a href="#vacancies">Browse available vacancies</a>
+
+        <a href="#apply">Submit an application</a>
+
+        <a href="#track">Track your application</a>
+
+        <a href="#canadaGalleryGrid">Discover opportunities in Canada</a>
+
+        <a href="/admin.html">Recruitment administration</a>
+
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =================================
+       CANADA PHOTO GALLERY
+  ================================= -->
+
+  <section class="canada-gallery section">
+
+    <div class="wrap">
+
+      <p class="eyebrow">DISCOVER CANADA</p>
+
+      <h2>Discover Opportunities in Canada</h2>
+
+      <p>
+        Explore life, work and employment opportunities
+        across different parts of Canada.
+      </p>
+
+      <div
+        class="canada-gallery-grid"
+        id="canadaGalleryGrid"
+      >
+        <p>Loading gallery photos...</p>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <!-- =================================
+       AVAILABLE VACANCIES
+  ================================= -->
 
   <section id="vacancies" class="section">
-    <div class="section-head">
-      <div>
-        <p class="eyebrow">CURRENT OPENINGS</p>
-        <h2>Available vacancies</h2>
+
+    <div class="wrap">
+
+      <div class="section-head">
+
+        <div>
+
+          <p class="eyebrow">CURRENT OPENINGS</p>
+
+          <h2>Available vacancies</h2>
+
+        </div>
+
+        <button
+          class="btn secondary"
+          id="reloadJobs"
+          type="button"
+        >
+          Refresh
+        </button>
+
       </div>
-      <button class="btn secondary" id="reloadJobs">Refresh</button>
+
+      <div id="jobs" class="jobs">
+
+        <p>Loading vacancies...</p>
+
+      </div>
+
     </div>
 
-    <div id="jobs" class="jobs">
-      <p>Loading vacancies…</p>
-    </div>
   </section>
 
-  <!-- APPLICATION FORM -->
+
+  <!-- =================================
+       APPLICATION FORM
+  ================================= -->
 
   <section id="apply" class="section panel">
-    <p class="eyebrow">APPLICANT REGISTRATION</p>
-    <h2>Submit your application</h2>
 
-    <p class="muted">
-      Provide accurate information. Do not submit bank details or identity documents through this form.
-    </p>
+    <div class="wrap">
 
-    <form id="applicationForm" class="form-grid">
+      <p class="eyebrow">APPLICANT REGISTRATION</p>
 
-      <label>Full name *
-        <input name="fullName" required maxlength="120" autocomplete="name">
-      </label>
+      <h2>Submit your application</h2>
 
-      <label>Email address *
-        <input name="email" type="email" required maxlength="254" autocomplete="email">
-      </label>
+      <p class="muted">
+        Provide accurate information for recruitment assessment.
+        Submitting an application does not guarantee employment
+        or a work permit.
+      </p>
 
-      <label>Phone number *
-        <input
-          name="phone"
-          type="tel"
-          required
-          maxlength="25"
-          autocomplete="tel"
-          placeholder="e.g. +14165551234"
-        >
-        <small>Include your country calling code. Canada's code is +1.</small>
-      </label>
 
-      <label>Current country of residence *
-        <input name="country" required maxlength="100">
-      </label>
+      <form id="applicationForm" class="form-grid">
 
-      <label>Occupation / profession *
-        <input name="occupation" required maxlength="120">
-      </label>
+        <label>
+          Full name *
 
-      <label>Relevant work experience *
-        <select name="experience" required>
-          <option value="">Choose one</option>
-          <option>Less than 2 years</option>
-          <option>2–5 years</option>
-          <option>6–10 years</option>
-          <option>More than 10 years</option>
-          <option>No formal experience</option>
-        </select>
-      </label>
+          <input
+            name="fullName"
+            required
+            maxlength="120"
+            autocomplete="name"
+          >
+        </label>
 
-      <label>Highest education *
-        <select name="education" required>
-          <option value="">Choose one</option>
-          <option>Primary</option>
-          <option>Secondary</option>
-          <option>Certificate</option>
-          <option>Diploma</option>
-          <option>Bachelor's degree</option>
-          <option>Postgraduate</option>
-          <option>Other</option>
-        </select>
-      </label>
 
-      <label>CV / résumé status *
-        <select name="cvStatus" required>
-          <option value="">Choose one</option>
-          <option>I have an updated CV</option>
-          <option>I need help preparing my CV</option>
-        </select>
-      </label>
+        <label>
+          Email address *
 
-      <label>Vacancy (optional)
-        <select name="jobId" id="jobSelect">
-          <option value="">General profile registration</option>
-        </select>
-      </label>
+          <input
+            name="email"
+            type="email"
+            required
+            maxlength="254"
+            autocomplete="email"
+          >
+        </label>
 
-      <label class="full">Additional information (optional)
-        <textarea name="message" rows="4" maxlength="1500"></textarea>
-      </label>
 
-      <label class="check full">
-        <input type="checkbox" name="consent" required>
-        I confirm that the information is accurate and consent to its use for recruitment assessment. I understand this does not guarantee employment or a visa.
-      </label>
+        <label>
+          Phone number *
 
-      <div class="full">
-        <button class="btn" type="submit">Submit application</button>
-        <p id="applyResult" class="result" role="status"></p>
-      </div>
+          <input
+            name="phone"
+            type="tel"
+            required
+            maxlength="25"
+            autocomplete="tel"
+            placeholder="e.g. +14165551234"
+          >
 
-    </form>
+          <small>
+            Include your country calling code.
+          </small>
+
+        </label>
+
+
+        <label>
+          Current country of residence *
+
+          <input
+            name="country"
+            required
+            maxlength="100"
+          >
+        </label>
+
+
+        <label>
+          Occupation / profession *
+
+          <input
+            name="occupation"
+            required
+            maxlength="120"
+          >
+        </label>
+
+
+        <label>
+          Relevant work experience *
+
+          <select name="experience" required>
+
+            <option value="">Choose one</option>
+
+            <option>Less than 2 years</option>
+
+            <option>2–5 years</option>
+
+            <option>6–10 years</option>
+
+            <option>More than 10 years</option>
+
+            <option>No formal experience</option>
+
+          </select>
+
+        </label>
+
+
+        <label>
+          Highest education *
+
+          <select name="education" required>
+
+            <option value="">Choose one</option>
+
+            <option>Primary</option>
+
+            <option>Secondary</option>
+
+            <option>Certificate</option>
+
+            <option>Diploma</option>
+
+            <option>Bachelor's degree</option>
+
+            <option>Postgraduate</option>
+
+            <option>Other</option>
+
+          </select>
+
+        </label>
+
+
+        <label>
+          CV / résumé status *
+
+          <select name="cvStatus" required>
+
+            <option value="">Choose one</option>
+
+            <option>I have an updated CV</option>
+
+            <option>I need help preparing my CV</option>
+
+          </select>
+
+        </label>
+
+
+        <label>
+          Vacancy (optional)
+
+          <select name="jobId" id="jobSelect">
+
+            <option value="">
+              General profile registration
+            </option>
+
+          </select>
+
+        </label>
+
+
+        <label class="full">
+
+          Additional information (optional)
+
+          <textarea
+            name="message"
+            rows="4"
+            maxlength="1500"
+          ></textarea>
+
+        </label>
+
+
+        <label class="check full">
+
+          <input
+            type="checkbox"
+            name="consent"
+            required
+          >
+
+          I confirm that the information is accurate and
+          consent to its use for recruitment assessment.
+          I understand that this does not guarantee employment
+          or a visa.
+
+        </label>
+
+
+        <div class="full">
+
+          <button class="btn" type="submit">
+            Submit application
+          </button>
+
+          <p
+            id="applyResult"
+            class="result"
+            role="status"
+          ></p>
+
+        </div>
+
+      </form>
+
+    </div>
+
   </section>
 
-  <!-- APPLICATION TRACKING -->
+
+  <!-- =================================
+       APPLICATION TRACKING
+  ================================= -->
 
   <section id="track" class="section panel">
-    <p class="eyebrow">APPLICATION STATUS</p>
-    <h2>Track your application</h2>
 
-    <form id="trackForm" class="form-grid compact">
+    <div class="wrap">
 
-      <label>Reference number
-        <input name="reference" placeholder="e.g. CA-ABC123..." required>
-      </label>
+      <p class="eyebrow">APPLICATION STATUS</p>
 
-      <label>Email used to apply
-        <input name="email" type="email" required>
-      </label>
+      <h2>Track your application</h2>
 
-      <div class="full">
-        <button class="btn secondary" type="submit">Check status</button>
-        <p id="trackResult" class="result" role="status"></p>
-      </div>
+      <p class="muted">
+        Enter your application reference number and
+        registered email address to check your status.
+      </p>
 
-    </form>
+
+      <form id="trackForm" class="form-grid compact">
+
+        <label>
+          Reference number
+
+          <input
+            name="reference"
+            placeholder="e.g. CA-ABC123"
+            required
+          >
+
+        </label>
+
+
+        <label>
+          Email used to apply
+
+          <input
+            name="email"
+            type="email"
+            required
+          >
+
+        </label>
+
+
+        <div class="full">
+
+          <button
+            class="btn secondary"
+            type="submit"
+          >
+            Check application status
+          </button>
+
+          <p
+            id="trackResult"
+            class="result"
+            role="status"
+          ></p>
+
+        </div>
+
+      </form>
+
+    </div>
+
   </section>
 
 </main>
 
-<!-- FOOTER -->
+
+<!-- =================================
+     FOOTER
+================================= -->
 
 <footer>
+
   <div class="wrap">
-    <p><strong>External privacy policy reference:</strong></p>
+
+    <h3>Canada Employment Portal</h3>
 
     <p>
-      The Treasury Board of Canada Secretariat Policy on Privacy Protection
-      defines administrative purpose as the use of personal information about
-      an individual "in a decision making process that directly affects that
-      individual". This includes all uses of personal information for confirming
-      identity (i.e. authentication and verification purposes) and for
-      determining eligibility of individuals for government programs.
+      Independent recruitment information and application service.
+    </p>
+
+    <div class="footer-links">
+
+      <a href="#vacancies">Vacancies</a>
+
+      <a href="#apply">Apply</a>
+
+      <a href="#track">Track application</a>
+
+      <a href="/admin.html">Admin</a>
+
+    </div>
+
+    <p class="footer-disclaimer">
+      This is an independent recruitment service. It is not
+      affiliated with, endorsed by, or operated by the Government
+      of Canada, Immigration, Refugees and Citizenship Canada (IRCC),
+      or any Canadian government department.
     </p>
 
     <p>
-      This is an external policy reference and does not mean this independent
-      recruitment service is affiliated with the Government of Canada or IRCC.
+      © <span id="currentYear"></span>
+      Canada Employment Portal. All rights reserved.
     </p>
+
   </div>
+
 </footer>
 
-<!-- WEBSITE JAVASCRIPT -->
+
+<!-- =================================
+     WEBSITE JAVASCRIPT
+================================= -->
 
 <script src="/app.js"></script>
 
-<!-- WHATSAPP HELPLINE -->
+<script>
+
+  // CURRENT YEAR
+
+  document.getElementById("currentYear").textContent =
+    new Date().getFullYear();
+
+
+  // JOB SEARCH
+
+  document.getElementById("websiteSearch").addEventListener(
+    "submit",
+    function(event) {
+
+      event.preventDefault();
+
+      const searchValue = document
+        .getElementById("jobSearch")
+        .value
+        .trim()
+        .toLowerCase();
+
+      const jobsContainer = document.getElementById("jobs");
+
+      const jobCards = jobsContainer.children;
+
+      for (const card of jobCards) {
+
+        const matches = card.textContent
+          .toLowerCase()
+          .includes(searchValue);
+
+        card.hidden = searchValue !== "" && !matches;
+
+      }
+
+      document.getElementById("vacancies").scrollIntoView({
+        behavior: "smooth"
+      });
+
+    }
+  );
+
+</script>
+
+
+<!-- =================================
+     WHATSAPP HELPLINE
+================================= -->
+
 <a
   href="https://wa.me/12549738674"
   class="whatsapp-helpline"
@@ -214,11 +603,12 @@
   rel="noopener noreferrer"
   aria-label="Chat with our recruitment team on WhatsApp"
 >
+
   <span class="whatsapp-icon">☏</span>
+
   WhatsApp Helpline
+
 </a>
-</body>
-</html>
 
 </body>
 </html>
