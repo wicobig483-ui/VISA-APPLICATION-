@@ -936,10 +936,10 @@ a:focus-visible {
 }
 
 /* =================================
-   FLOATING EMAIL HELPLINE
+   FLOATING WHATSAPP HELPLINE
 ================================= */
 
-.email-helpline {
+.whatsapp-helpline {
   position: fixed;
   right: 20px;
   bottom: 20px;
@@ -947,9 +947,9 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px 22px;
-  background: #0878d1;
+  gap: 9px;
+  padding: 13px 20px;
+  background: #25D366;
   color: #ffffff !important;
   font-size: 15px;
   font-weight: 800;
@@ -959,26 +959,21 @@ a:focus-visible {
   transition: background 0.2s, transform 0.2s;
 }
 
-.email-helpline:hover {
-  background: #005da8;
+.whatsapp-helpline:hover {
+  background: #128C7E;
   transform: translateY(-3px);
 }
 
-.email-icon {
-  font-size: 22px;
-  line-height: 1;
+.whatsapp-icon {
+  font-size: 21px;
 }
 
 @media (max-width: 600px) {
-  .email-helpline {
+  .whatsapp-helpline {
     right: 12px;
     bottom: 15px;
-    padding: 11px 16px;
+    padding: 11px 15px;
     font-size: 13px;
-  }
-
-  .email-icon {
-    font-size: 19px;
   }
 }
 
@@ -1283,95 +1278,4 @@ footer p {
     font-size: 16px;
   }
 
-  .brand-name small {
-    font-size: 9px;
-    letter-spacing: 0.7px;
-  }
-
-  .header-language {
-    font-size: 15px;
-  }
-
-  .website-search input {
-    padding: 12px;
-    font-size: 14px;
-  }
-
-  .website-search button {
-    width: 50px;
-    min-width: 50px;
-  }
-
-  .navigation-bar {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
-    padding: 12px 0;
-  }
-
-  .main-navigation {
-    gap: 12px 16px;
-  }
-
-  .main-navigation a {
-    font-size: 12px;
-  }
-
-  .hero {
-    padding: 40px 0;
-  }
-
-  .hero-description {
-    font-size: 16px;
-  }
-
-  .requested-links {
-    grid-template-columns: 1fr;
-    gap: 15px;
-  }
-
-  .requested-links a {
-    font-size: 16px;
-  }
-
-  .canada-gallery {
-    padding: 35px 0;
-  }
-
-  #apply,
-  #track {
-    padding: 25px 0;
-  }
-}
-
-/* SMALL MOBILE PHONES */
-
-@media (max-width: 380px) {
-
-  .brand-name {
-    font-size: 14px;
-  }
-
-  .requested-links a {
-    font-size: 14px;
-  }
-
-  .main-navigation {
-    gap: 10px 12px;
-  }
-
-  .main-navigation a {
-    font-size: 11px;
-  }
-
-  .email-helpline {
-    right: 10px;
-    bottom: 12px;
-    padding: 10px 14px;
-    font-size: 12px;
-  }
-
-  .email-icon {
-    font-size: 18px;
-  }
-}
+  .brand-name small
