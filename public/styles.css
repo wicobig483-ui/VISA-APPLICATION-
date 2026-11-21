@@ -936,10 +936,10 @@ a:focus-visible {
 }
 
 /* =================================
-   FLOATING WHATSAPP HELPLINE
+   FLOATING EMAIL HELPLINE
 ================================= */
 
-.whatsapp-helpline {
+.email-helpline {
   position: fixed;
   right: 20px;
   bottom: 20px;
@@ -947,9 +947,9 @@ a:focus-visible {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  padding: 13px 20px;
-  background: #25D366;
+  gap: 10px;
+  padding: 14px 22px;
+  background: #0878d1;
   color: #ffffff !important;
   font-size: 15px;
   font-weight: 800;
@@ -959,21 +959,26 @@ a:focus-visible {
   transition: background 0.2s, transform 0.2s;
 }
 
-.whatsapp-helpline:hover {
-  background: #128C7E;
+.email-helpline:hover {
+  background: #005da8;
   transform: translateY(-3px);
 }
 
-.whatsapp-icon {
-  font-size: 21px;
+.email-icon {
+  font-size: 22px;
+  line-height: 1;
 }
 
 @media (max-width: 600px) {
-  .whatsapp-helpline {
+  .email-helpline {
     right: 12px;
     bottom: 15px;
-    padding: 11px 15px;
+    padding: 11px 16px;
     font-size: 13px;
+  }
+
+  .email-icon {
+    font-size: 19px;
   }
 }
 
@@ -1280,68 +1285,53 @@ footer p {
 
   .brand-name small {
     font-size: 9px;
+    letter-spacing: 0.7px;
   }
 
-  .website-search {
-    margin: 10px 0 18px;
-  }
-
-  .website-search input {
-    padding: 13px 12px;
+  .header-language {
     font-size: 15px;
   }
 
+  .website-search input {
+    padding: 12px;
+    font-size: 14px;
+  }
+
   .website-search button {
-    width: 55px;
-    min-width: 55px;
+    width: 50px;
+    min-width: 50px;
   }
 
   .navigation-bar {
-    min-height: 58px;
-    align-items: center;
-  }
-
-  .menu-label {
-    font-size: 17px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 0;
   }
 
   .main-navigation {
-    gap: 8px 12px;
-    justify-content: flex-end;
-    max-width: 75%;
+    gap: 12px 16px;
   }
 
   .main-navigation a {
-    font-size: 11px;
+    font-size: 12px;
   }
 
   .hero {
-    padding: 43px 0 48px;
-  }
-
-  .hero h1 {
-    font-size: 36px;
+    padding: 40px 0;
   }
 
   .hero-description {
-    font-size: 17px;
-  }
-
-  .most-requested {
-    padding: 30px 0;
-  }
-
-  .most-requested h2 {
-    font-size: 27px;
+    font-size: 16px;
   }
 
   .requested-links {
     grid-template-columns: 1fr;
-    gap: 19px;
+    gap: 15px;
   }
 
   .requested-links a {
-    font-size: 17px;
+    font-size: 16px;
   }
 
   .canada-gallery {
@@ -1362,170 +1352,26 @@ footer p {
     font-size: 14px;
   }
 
-  .main-navigation {
-    gap: 6px 9px;
-  }
-
-  .main-navigation a {
-    font-size: 10px;
-  }
-
-  .hero h1 {
-    font-size: 31px;
-  }
-
-}
-
-/* =========================================
-   CANADA INFORMATION CENTRE
-========================================= */
-
-#canada-information {
-  padding: 55px 0;
-  background: #f4f6f8;
-  color: #263238;
-}
-
-#canada-information .container {
-  width: 92%;
-  max-width: 1180px;
-  margin: 0 auto;
-}
-
-.information-heading {
-  margin-bottom: 30px;
-}
-
-.information-heading h2 {
-  color: #263746;
-  font-size: 32px;
-  margin-bottom: 12px;
-}
-
-.information-heading p {
-  color: #56616b;
-  font-size: 16px;
-  line-height: 1.7;
-  max-width: 850px;
-}
-
-.information-notice {
-  background: #fff;
-  border-left: 5px solid #263746;
-  padding: 18px 20px;
-  margin: 25px 0 32px;
-  border-radius: 5px;
-  box-shadow: 0 2px 9px rgba(0,0,0,0.05);
-  line-height: 1.7;
-  font-size: 14px;
-}
-
-.information-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 22px;
-}
-
-.information-card {
-  background: #fff;
-  border: 1px solid #dce2e7;
-  border-radius: 7px;
-  padding: 23px;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.04);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.information-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 7px 20px rgba(0,0,0,0.09);
-}
-
-.information-card h3 {
-  color: #263746;
-  font-size: 19px;
-  line-height: 1.4;
-  margin: 0 0 15px;
-}
-
-.information-card details {
-  border-top: 1px solid #e7ebef;
-  padding: 12px 0;
-}
-
-.information-card summary {
-  cursor: pointer;
-  color: #075a9c;
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.5;
-}
-
-.information-card summary:hover {
-  color: #003b69;
-  text-decoration: underline;
-}
-
-.information-card details p {
-  color: #4f5b65;
-  font-size: 14px;
-  line-height: 1.7;
-  margin: 12px 0;
-}
-
-.information-card details a {
-  display: inline-block;
-  color: #075a9c;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: underline;
-  margin-top: 5px;
-}
-
-.information-card details a:hover {
-  color: #003b69;
-}
-
-.information-card details[open] {
-  padding-bottom: 16px;
-}
-
-/* TABLET */
-
-@media (max-width: 900px) {
-  .information-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .information-heading h2 {
-    font-size: 28px;
-  }
-}
-
-/* MOBILE */
-
-@media (max-width: 600px) {
-  #canada-information {
-    padding: 35px 0;
-  }
-
-  .information-grid {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-
-  .information-card {
-    padding: 19px;
-  }
-
-  .information-heading h2 {
-    font-size: 25px;
-  }
-
-  .information-heading p {
+  .requested-links a {
     font-size: 14px;
   }
 
-  .information-card h3 {
-    font-size: 17px;
+  .main-navigation {
+    gap: 10px 12px;
   }
-    }
+
+  .main-navigation a {
+    font-size: 11px;
+  }
+
+  .email-helpline {
+    right: 10px;
+    bottom: 12px;
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+
+  .email-icon {
+    font-size: 18px;
+  }
+}
