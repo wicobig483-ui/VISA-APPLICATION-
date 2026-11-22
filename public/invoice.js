@@ -11,7 +11,7 @@ function showMessage(message, isError = false) {
 }
 
 function money(value) {
-  return "US$" + Number(value).toFixed(2);
+  return Number(value).toFixed(2) + " USDT";
 }
 
 async function request(url, options = {}) {
