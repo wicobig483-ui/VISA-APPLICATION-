@@ -1089,9 +1089,9 @@ async function loadInvoices() {
         const verify = document.createElement("button");
         verify.type = "button";
         verify.className = "btn";
-        verify.textContent = "Mark paid";
+        verify.textContent = "Verify payment";
         verify.addEventListener("click", async () => {
-          if (!confirm("Only continue after verifying this transaction on the TRON network. Mark invoice " + invoice.reference + " as paid?")) return;
+          if (!confirm("Check the submitted transaction on TRON and mark invoice " + invoice.reference + " as paid only if the confirmed USDT amount matches?")) return;
           verify.disabled = true;
           try {
             await api("/api/admin/invoices/" + invoice.id + "/paid", {
