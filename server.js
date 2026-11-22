@@ -1170,6 +1170,37 @@ app.patch(
 );
 
 // =====================================
+// ADMIN: DELETE VACANCY
+// =====================================
+
+app.delete("/api/admin/jobs/:id", adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({ error: "Invalid vacancy ID." });
+    }
+
+    const result = await pool.query(
+      "DELETE FROM jobs WHERE id = $1 RETURNING id, title",
+      [id]
+    );
+
+    if (!result.rowCount) {
+      return res.status(404).json({ error: "Vacancy not found." });
+    }
+
+    res.json({
+      message: "Vacancy deleted successfully.",
+      job: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Delete job error:", err);
+    res.status(500).json({ error: "Unable to delete vacancy." });
+  }
+});
+
+// =====================================
 // ADMIN: CREATE GALLERY PHOTO
 // =====================================
 
