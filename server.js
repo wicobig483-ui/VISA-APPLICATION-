@@ -1585,7 +1585,7 @@ app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
 
     const validTransfer =
       matchingTransfer.type === "Transfer" &&
-      matchingTransfer.success !== false &&
+      matchingTransfer.success === true &&
       matchingTransfer.to === walletAddress &&
       matchingTransfer.token_info &&
       matchingTransfer.token_info.address === TRON_USDT_CONTRACT &&
