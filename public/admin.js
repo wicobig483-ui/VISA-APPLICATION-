@@ -1073,9 +1073,9 @@ async function loadInvoices() {
       const values = [
         invoice.reference,
         invoice.employer_name + "\n" + invoice.employer_email,
-        "$" + Number(invoice.base_amount).toFixed(2),
-        "$" + Number(invoice.fee_amount).toFixed(2),
-        "$" + Number(invoice.total_amount).toFixed(2),
+        Number(invoice.base_amount).toFixed(2) + " USDT",
+        Number(invoice.fee_amount).toFixed(2) + " USDT",
+        Number(invoice.total_amount).toFixed(2) + " USDT",
         invoice.status,
         invoice.transaction_hash || "Not submitted"
       ];
