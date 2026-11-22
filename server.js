@@ -292,6 +292,10 @@ async function initializeDatabase() {
     CREATE INDEX IF NOT EXISTS employer_invoices_created_at_idx
       ON employer_invoices (created_at DESC);
 
+    CREATE UNIQUE INDEX IF NOT EXISTS employer_invoices_transaction_hash_uidx
+      ON employer_invoices (transaction_hash)
+      WHERE transaction_hash IS NOT NULL;
+
     CREATE TABLE IF NOT EXISTS gallery_photos (
       id BIGSERIAL PRIMARY KEY,
       title TEXT NOT NULL,
@@ -1331,12 +1335,17 @@ app.post("/api/admin/invoices", adminOnly, async (req, res) => {
     }
 
     const baseCents = Math.round(rawAmount * 100);
+    if (baseCents < 1) {
+      return res.status(400).json({
+        error: "Invoice amount must be at least 0.01 USD."
+      });
+    }
     const feeCents = Math.round(baseCents * 0.08);
     const totalCents = baseCents + feeCents;
     const baseAmount = (baseCents / 100).toFixed(2);
     const feeAmount = (feeCents / 100).toFixed(2);
     const totalAmount = (totalCents / 100).toFixed(2);
-    const reference = "INV-" + crypto.randomBytes(6).toString("hex").toUpperCase();
+    const reference = "INV-" + crypto.randomBytes(12).toString("hex").toUpperCase();
 
     const result = await pool.query(
       `INSERT INTO employer_invoices
@@ -1409,7 +1418,7 @@ app.get("/api/invoices/:reference", async (req, res) => {
 app.post("/api/invoices/:reference/transaction", async (req, res) => {
   try {
     const reference = clean(req.params.reference, 30).toUpperCase();
-    const transactionHash = clean(req.body.transactionHash, 128);
+    const transactionHash = clean(req.body.transactionHash, 128).toLowerCase();
 
     if (!/^[a-fA-F0-9]{64}$/.test(transactionHash)) {
       return res.status(400).json({
@@ -1454,6 +1463,11 @@ app.post("/api/invoices/:reference/transaction", async (req, res) => {
       invoice: result.rows[0]
     });
   } catch (err) {
+    if (err.code === "23505") {
+      return res.status(409).json({
+        error: "This transaction hash has already been submitted for another invoice."
+      });
+    }
     console.error("Submit invoice transaction error:", err);
     res.status(500).json({ error: "Unable to submit transaction hash." });
   }
