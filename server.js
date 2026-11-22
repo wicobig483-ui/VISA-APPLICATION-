@@ -1590,7 +1590,7 @@ app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
       matchingTransfer.token_info &&
       matchingTransfer.token_info.address === TRON_USDT_CONTRACT &&
       Number(matchingTransfer.token_info.decimals) === 6 &&
-      /^\\d+$/.test(String(matchingTransfer.value || "")) &&
+      /^\d+$/.test(String(matchingTransfer.value || "")) &&
       BigInt(matchingTransfer.value) === expectedUnits;
 
     if (!validTransfer) {
