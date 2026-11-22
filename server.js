@@ -272,6 +272,26 @@ async function initializeDatabase() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS application_received_email_sent_at TIMESTAMPTZ;
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS under_review_email_sent_at TIMESTAMPTZ;
 
+    CREATE TABLE IF NOT EXISTS employer_invoices (
+      id BIGSERIAL PRIMARY KEY,
+      reference TEXT UNIQUE NOT NULL,
+      employer_name TEXT NOT NULL,
+      employer_email TEXT NOT NULL,
+      base_amount NUMERIC(12,2) NOT NULL CHECK (base_amount > 0),
+      fee_amount NUMERIC(12,2) NOT NULL CHECK (fee_amount >= 0),
+      total_amount NUMERIC(12,2) NOT NULL CHECK (total_amount > 0),
+      currency TEXT NOT NULL DEFAULT 'USD',
+      status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'submitted', 'paid')),
+      transaction_hash TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      submitted_at TIMESTAMPTZ,
+      paid_at TIMESTAMPTZ
+    );
+
+    CREATE INDEX IF NOT EXISTS employer_invoices_created_at_idx
+      ON employer_invoices (created_at DESC);
+
     CREATE TABLE IF NOT EXISTS gallery_photos (
       id BIGSERIAL PRIMARY KEY,
       title TEXT NOT NULL,
@@ -1287,6 +1307,193 @@ app.patch(
     }
   }
 );
+
+// =====================================
+// EMPLOYER INVOICES: ADMIN CREATE AND LIST
+// =====================================
+
+app.post("/api/admin/invoices", adminOnly, async (req, res) => {
+  try {
+    const employerName = clean(req.body.employerName, 150);
+    const employerEmail = clean(req.body.employerEmail, 254).toLowerCase();
+    const rawAmount = Number(req.body.baseAmount);
+
+    if (!employerName || !validEmail(employerEmail)) {
+      return res.status(400).json({
+        error: "Enter a valid employer name and email address."
+      });
+    }
+
+    if (!Number.isFinite(rawAmount) || rawAmount <= 0 || rawAmount > 10000000) {
+      return res.status(400).json({
+        error: "Enter an invoice amount greater than 0 and no more than 10,000,000 USD."
+      });
+    }
+
+    const baseCents = Math.round(rawAmount * 100);
+    const feeCents = Math.round(baseCents * 0.08);
+    const totalCents = baseCents + feeCents;
+    const baseAmount = (baseCents / 100).toFixed(2);
+    const feeAmount = (feeCents / 100).toFixed(2);
+    const totalAmount = (totalCents / 100).toFixed(2);
+    const reference = "INV-" + crypto.randomBytes(6).toString("hex").toUpperCase();
+
+    const result = await pool.query(
+      `INSERT INTO employer_invoices
+       (reference, employer_name, employer_email, base_amount, fee_amount, total_amount)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id, reference, employer_name, employer_email,
+                 base_amount, fee_amount, total_amount, currency,
+                 status, created_at`,
+      [reference, employerName, employerEmail, baseAmount, feeAmount, totalAmount]
+    );
+
+    res.status(201).json({
+      message: "Employer invoice created.",
+      invoice: result.rows[0],
+      paymentUrl: "/invoice.html?ref=" + encodeURIComponent(reference)
+    });
+  } catch (err) {
+    console.error("Create employer invoice error:", err);
+    res.status(500).json({ error: "Unable to create employer invoice." });
+  }
+});
+
+app.get("/api/admin/invoices", adminOnly, async (_req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, reference, employer_name, employer_email,
+              base_amount, fee_amount, total_amount, currency,
+              status, transaction_hash, created_at, submitted_at, paid_at
+       FROM employer_invoices
+       ORDER BY created_at DESC
+       LIMIT 500`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error("List employer invoices error:", err);
+    res.status(500).json({ error: "Unable to load employer invoices." });
+  }
+});
+
+// =====================================
+// EMPLOYER INVOICES: PUBLIC VIEW / TX SUBMISSION
+// =====================================
+
+app.get("/api/invoices/:reference", async (req, res) => {
+  try {
+    const reference = clean(req.params.reference, 30).toUpperCase();
+    const result = await pool.query(
+      `SELECT reference, employer_name, base_amount, fee_amount,
+              total_amount, currency, status, created_at
+       FROM employer_invoices
+       WHERE reference = $1`,
+      [reference]
+    );
+
+    if (!result.rowCount) {
+      return res.status(404).json({ error: "Invoice not found." });
+    }
+
+    res.json({
+      invoice: result.rows[0],
+      network: "TRON (TRC20)",
+      walletAddress: process.env.USDT_TRC20_ADDRESS || null
+    });
+  } catch (err) {
+    console.error("Public invoice lookup error:", err);
+    res.status(500).json({ error: "Unable to load invoice." });
+  }
+});
+
+app.post("/api/invoices/:reference/transaction", async (req, res) => {
+  try {
+    const reference = clean(req.params.reference, 30).toUpperCase();
+    const transactionHash = clean(req.body.transactionHash, 128);
+
+    if (!/^[a-fA-F0-9]{64}$/.test(transactionHash)) {
+      return res.status(400).json({
+        error: "Enter a valid 64-character TRON transaction hash."
+      });
+    }
+
+    if (!process.env.USDT_TRC20_ADDRESS) {
+      return res.status(503).json({
+        error: "USDT TRC20 payment details are not configured. Contact the administrator."
+      });
+    }
+
+    const result = await pool.query(
+      `UPDATE employer_invoices
+       SET transaction_hash = $1,
+           status = 'submitted',
+           submitted_at = NOW()
+       WHERE reference = $2
+         AND status = 'pending'
+       RETURNING reference, status, submitted_at`,
+      [transactionHash, reference]
+    );
+
+    if (!result.rowCount) {
+      const existing = await pool.query(
+        "SELECT status FROM employer_invoices WHERE reference = $1",
+        [reference]
+      );
+
+      if (!existing.rowCount) {
+        return res.status(404).json({ error: "Invoice not found." });
+      }
+
+      return res.status(409).json({
+        error: "This invoice has already had a transaction submitted or has been paid."
+      });
+    }
+
+    res.json({
+      message: "Transaction hash submitted for administrator verification. Payment is not yet marked as paid.",
+      invoice: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Submit invoice transaction error:", err);
+    res.status(500).json({ error: "Unable to submit transaction hash." });
+  }
+});
+
+// =====================================
+// EMPLOYER INVOICES: ADMIN MARK PAID
+// =====================================
+
+app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({ error: "Invalid invoice ID." });
+    }
+
+    const result = await pool.query(
+      `UPDATE employer_invoices
+       SET status = 'paid', paid_at = NOW()
+       WHERE id = $1 AND status = 'submitted'
+         AND transaction_hash IS NOT NULL
+       RETURNING id, reference, status, paid_at`,
+      [id]
+    );
+
+    if (!result.rowCount) {
+      return res.status(409).json({
+        error: "Only invoices with a submitted transaction can be marked paid. Verify the transaction on the TRON network first."
+      });
+    }
+
+    res.json({
+      message: "Invoice marked paid after administrator verification.",
+      invoice: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Mark invoice paid error:", err);
+    res.status(500).json({ error: "Unable to update invoice payment status." });
+  }
+});
 
 // =====================================
 // SERVE WEBSITE FILES
