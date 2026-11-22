@@ -1080,3 +1080,111 @@ textarea:focus-visible {
   }
 
 }
+
+
+/* CANADA-INSPIRED HOMEPAGE FINISH */
+:root {
+  --red: #d80621;
+  --red-dark: #b51227;
+  --navy: #17324d;
+  --light: #f4f7fa;
+}
+.top {
+  border-top: 6px solid #d80621;
+  box-shadow: 0 3px 14px rgba(23, 50, 77, 0.07);
+}
+.brand-flag {
+  width: 44px;
+  height: 30px;
+  border: 1px solid #e3e7eb;
+  box-shadow: 0 2px 5px rgba(0,0,0,.08);
+}
+.brand { color: #17324d; }
+.nav nav a:hover { color: #d80621; border-bottom-color: #d80621; }
+.hero {
+  min-height: 470px;
+  background:
+    linear-gradient(90deg, rgba(12, 31, 49, .92) 0%, rgba(12, 31, 49, .76) 52%, rgba(12, 31, 49, .34) 100%),
+    url("https://images.unsplash.com/photo-1503614472-8c93d56cd4b4?auto=format&fit=crop&w=2000&q=85") center 52% / cover no-repeat,
+    #17324d;
+  border-bottom: 7px solid #d80621;
+}
+.hero .eyebrow {
+  display: inline-block;
+  padding: 8px 13px;
+  border-left: 4px solid #d80621;
+  background: rgba(255,255,255,.12);
+  color: #fff;
+  letter-spacing: 1.5px;
+}
+.hero h1 {
+  max-width: 780px;
+  text-shadow: 0 2px 14px rgba(0,0,0,.25);
+}
+.hero .btn {
+  min-height: 49px;
+  padding-left: 26px;
+  padding-right: 26px;
+  border-radius: 4px;
+  box-shadow: 0 5px 18px rgba(0,0,0,.2);
+}
+.canada-gallery {
+  background: #f4f7fa;
+}
+.canada-gallery-grid .gallery-item,
+.canada-gallery-grid .gallery-card {
+  border: 0;
+  border-bottom: 4px solid #d80621;
+  border-radius: 7px;
+  box-shadow: 0 7px 22px rgba(23,50,77,.09);
+}
+.canada-gallery-grid img,
+.canada-gallery-grid video {
+  transition: transform .35s ease;
+}
+.canada-gallery-grid .gallery-item:hover img,
+.canada-gallery-grid .gallery-card:hover img {
+  transform: scale(1.035);
+}
+#vacancies {
+  background: #f4f7fa;
+}
+.job, .job-card, .jobs > * {
+  border: 1px solid #e1e7ed;
+  border-top: 4px solid #d80621;
+  border-radius: 7px;
+  box-shadow: 0 5px 18px rgba(23,50,77,.06);
+}
+.panel {
+  border: 1px solid #e1e7ed;
+  border-top: 5px solid #d80621;
+  border-radius: 8px;
+  box-shadow: 0 8px 26px rgba(23,50,77,.06);
+}
+.btn {
+  border-radius: 4px;
+  background: #d80621;
+  border-color: #d80621;
+}
+.btn:hover {
+  background: #b51227;
+  border-color: #b51227;
+}
+.btn.secondary {
+  background: #17324d;
+  border-color: #17324d;
+}
+footer {
+  border-top: 6px solid #d80621;
+  background: #17324d;
+}
+@media (max-width: 650px) {
+  .hero {
+    min-height: 390px;
+    background-position: 58% center;
+  }
+  .brand-flag {
+    width: 39px;
+    height: 27px;
+  }
+}
