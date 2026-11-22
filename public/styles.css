@@ -1055,3 +1055,37 @@ textarea:focus-visible {
   }
 
 }
+.floating-email {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 14px 20px;
+  background: #b51f32;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  border-radius: 30px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.floating-email:hover {
+  background: #92182a;
+  transform: translateY(-3px);
+}
+
+.floating-email span {
+  font-size: 19px;
+}
+
+@media (max-width: 600px) {
+  .floating-email {
+    right: 15px;
+    bottom: 15px;
+    padding: 12px 17px;
+  }
+}
