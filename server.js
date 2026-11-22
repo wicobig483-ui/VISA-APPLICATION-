@@ -280,7 +280,7 @@ async function initializeDatabase() {
       base_amount NUMERIC(12,2) NOT NULL CHECK (base_amount > 0),
       fee_amount NUMERIC(12,2) NOT NULL CHECK (fee_amount >= 0),
       total_amount NUMERIC(12,2) NOT NULL CHECK (total_amount > 0),
-      currency TEXT NOT NULL DEFAULT 'USD',
+      currency TEXT NOT NULL DEFAULT 'USDT',
       status TEXT NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'submitted', 'paid')),
       transaction_hash TEXT,
@@ -1485,6 +1485,7 @@ app.post("/api/invoices/:reference/transaction", async (req, res) => {
 // =====================================
 
 const TRON_USDT_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+const DEFAULT_USDT_TRC20_ADDRESS = "TDHY35mVCLuFPB7gAwG6cPvhTAgV5FmNZU";
 
 app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
   try {
@@ -1494,7 +1495,7 @@ app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
     }
 
     const apiKey = process.env.TRONGRID_API_KEY;
-    const walletAddress = process.env.USDT_TRC20_ADDRESS;
+    const walletAddress = process.env.USDT_TRC20_ADDRESS || DEFAULT_USDT_TRC20_ADDRESS;
     if (!apiKey || !walletAddress) {
       return res.status(503).json({
         error: "Automatic verification is not configured. Add TRONGRID_API_KEY and check USDT_TRC20_ADDRESS in Render."
