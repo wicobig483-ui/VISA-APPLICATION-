@@ -632,3 +632,162 @@ function renderJob(job) {
     const requirements = createElement("p", "job-requirements");
 
     const label = createElement("strong"
+
+    );
+    label.textContent = "Requirements: ";
+    requirements.appendChild(label);
+    requirements.appendChild(document.createTextNode(job.requirements));
+    details.appendChild(requirements);
+  }
+  if (job.salary) details.appendChild(createElement("p", "job-salary", "Salary: " + job.salary));
+  const applyLink = createElement("a", "btn", "Apply for this vacancy");
+  applyLink.href = "#apply";
+  applyLink.addEventListener("click", () => {
+    const select = $("#jobSelect");
+    const occupation = $('#applicationForm [name="occupation"]');
+    if (select) select.value = String(job.id);
+    if (occupation && !occupation.value) occupation.value = job.title || "";
+  });
+  details.appendChild(applyLink);
+  card.appendChild(details);
+  return card;
+}
+
+async function loadJobs() {
+  const container = $("#jobs");
+  const select = $("#jobSelect");
+  if (!container) return;
+  try {
+    const data = await api("/api/jobs");
+    const jobs = Array.isArray(data) ? data : (data.jobs || []);
+    container.replaceChildren();
+    if (select) select.innerHTML = '<option value="">General profile registration</option>';
+    if (!jobs.length) {
+      container.appendChild(createElement("p", "muted", "No vacancies are currently listed."));
+      return;
+    }
+    jobs.forEach(job => {
+      container.appendChild(renderJob(job));
+      if (select) {
+        const option = document.createElement("option");
+        option.value = String(job.id);
+        option.textContent = job.title || "Vacancy";
+        select.appendChild(option);
+      }
+    });
+  } catch (error) {
+    show(container, error.message || "Unable to load vacancies.", true);
+  }
+}
+
+async function loadGallery() {
+  const grid = $("#canadaGalleryGrid");
+  if (!grid) return;
+  try {
+    const data = await api("/api/gallery");
+    const items = Array.isArray(data) ? data : (data.items || data.gallery || []);
+    grid.replaceChildren();
+    items.forEach(item => {
+      const card = createElement("article", "gallery-card");
+      const imageUrl = item.image_url || item.url || item.image;
+      if (imageUrl) {
+        const image = createElement("img", "gallery-image");
+        image.src = imageUrl;
+        image.alt = item.title || "Canada gallery image";
+        image.loading = "lazy";
+        card.appendChild(image);
+      }
+      if (item.title) card.appendChild(createElement("h3", "", item.title));
+      if (item.description) card.appendChild(createElement("p", "", item.description));
+      grid.appendChild(card);
+    });
+  } catch (error) {
+    console.error("Gallery loading failed:", error);
+  }
+}
+
+function setupApplicationForm() {
+  const form = $("#applicationForm");
+  if (!form) return;
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const result = $("#applyResult");
+    const button = form.querySelector('button[type="submit"]');
+    const values = new FormData(form);
+    const payload = {
+      fullName: String(values.get("fullName") || "").trim(),
+      email: String(values.get("email") || "").trim(),
+      phone: String(values.get("phone") || "").trim(),
+      country: String(values.get("country") || "").trim(),
+      occupation: String(values.get("occupation") || "").trim(),
+      experience: String(values.get("experience") || ""),
+      education: String(values.get("education") || ""),
+      cvStatus: String(values.get("cvStatus") || ""),
+      jobId: values.get("jobId") || null,
+      message: String(values.get("message") || "").trim(),
+      consent: values.get("consent") === "on"
+    };
+    try {
+      if (button) button.disabled = true;
+      show(result, "Submitting your application...");
+      const data = await api("/api/applications", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      show(result, (data.message || "Application submitted successfully.") +
+        (data.reference ? " Your reference number is " + data.reference + "." : ""));
+      if (data.reference) {
+        const refInput = $('#trackForm [name="reference"]');
+        if (refInput) refInput.value = data.reference;
+      }
+      form.reset();
+    } catch (error) {
+      show(result, error.message || "Your application could not be submitted. Please try again.", true);
+    } finally {
+      if (button) button.disabled = false;
+    }
+  });
+}
+
+function setupTrackingForm() {
+  const form = $("#trackForm");
+  if (!form) return;
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    const result = $("#trackResult");
+    const values = new FormData(form);
+    try {
+      show(result, "Checking your application...");
+      const data = await api("/api/track", {
+        method: "POST",
+        body: JSON.stringify({
+          reference: String(values.get("reference") || "").trim(),
+          email: String(values.get("email") || "").trim()
+        })
+      });
+      const application = data.application || data;
+      const lines = [
+        "Reference: " + (application.reference || ""),
+        "Status: " + (application.status || "Received")
+      ].filter(Boolean);
+      show(result, (data.message ? data.message + " " : "") + lines.join(" | "));
+    } catch (error) {
+      show(result, error.message || "Unable to find this application.", true);
+    }
+  });
+}
+
+function initializePortal() {
+  renderInformationCentre();
+  loadJobs();
+  loadGallery();
+  setupApplicationForm();
+  setupTrackingForm();
+  const reload = $("#reloadJobs");
+  if (reload) reload.addEventListener("click", loadJobs);
+}
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initializePortal);
+} else {
+  initializePortal();
+}
