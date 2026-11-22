@@ -286,8 +286,11 @@ async function initializeDatabase() {
       transaction_hash TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       submitted_at TIMESTAMPTZ,
-      paid_at TIMESTAMPTZ
+      paid_at TIMESTAMPTZ,
+      verified_at TIMESTAMPTZ
     );
+
+    ALTER TABLE employer_invoices ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
 
     CREATE INDEX IF NOT EXISTS employer_invoices_created_at_idx
       ON employer_invoices (created_at DESC);
@@ -1477,6 +1480,12 @@ app.post("/api/invoices/:reference/transaction", async (req, res) => {
 // EMPLOYER INVOICES: ADMIN MARK PAID
 // =====================================
 
+// =====================================
+// EMPLOYER INVOICES: VERIFY TRC20 PAYMENT
+// =====================================
+
+const TRON_USDT_CONTRACT = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+
 app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -1484,28 +1493,136 @@ app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
       return res.status(400).json({ error: "Invalid invoice ID." });
     }
 
+    const apiKey = process.env.TRONGRID_API_KEY;
+    const walletAddress = process.env.USDT_TRC20_ADDRESS;
+    if (!apiKey || !walletAddress) {
+      return res.status(503).json({
+        error: "Automatic verification is not configured. Add TRONGRID_API_KEY and check USDT_TRC20_ADDRESS in Render."
+      });
+    }
+
+    const invoiceResult = await pool.query(
+      `SELECT id, reference, total_amount, status, transaction_hash, created_at
+       FROM employer_invoices WHERE id = $1`,
+      [id]
+    );
+    if (!invoiceResult.rowCount) {
+      return res.status(404).json({ error: "Invoice not found." });
+    }
+
+    const invoice = invoiceResult.rows[0];
+    if (invoice.status !== "submitted" || !invoice.transaction_hash) {
+      return res.status(409).json({
+        error: "This invoice does not have a transaction awaiting verification."
+      });
+    }
+
+    const expectedUnits = BigInt(Math.round(Number(invoice.total_amount) * 100)) * 10000n;
+    const minTimestamp = Math.max(
+      0,
+      new Date(invoice.created_at).getTime() - 60000
+    );
+    let fingerprint = "";
+    let matchingTransfer = null;
+    let pagesChecked = 0;
+
+    do {
+      const query = new URLSearchParams({
+        only_confirmed: "true",
+        only_to: "true",
+        limit: "200",
+        contract_address: TRON_USDT_CONTRACT,
+        min_timestamp: String(minTimestamp)
+      });
+      if (fingerprint) query.set("fingerprint", fingerprint);
+
+      const url =
+        "https://api.trongrid.io/v1/accounts/" +
+        encodeURIComponent(walletAddress) +
+        "/transactions/trc20?" + query.toString();
+
+      const chainResponse = await fetch(url, {
+        method: "GET",
+        headers: {
+          accept: "application/json",
+          "TRON-PRO-API-KEY": apiKey
+        },
+        signal: AbortSignal.timeout(15000)
+      });
+
+      if (!chainResponse.ok) {
+        console.error("TronGrid verification returned:", chainResponse.status);
+        return res.status(502).json({
+          error: "Could not verify the payment with TRON right now. Please try again later."
+        });
+      }
+
+      const chainData = await chainResponse.json();
+      if (chainData.success === false || !Array.isArray(chainData.data)) {
+        return res.status(502).json({
+          error: "TRON returned an unexpected verification response."
+        });
+      }
+
+      matchingTransfer = chainData.data.find((transfer) =>
+        String(transfer.transaction_id || "").toLowerCase() ===
+          invoice.transaction_hash.toLowerCase()
+      ) || null;
+
+      if (matchingTransfer) break;
+
+      fingerprint = chainData.meta && chainData.meta.fingerprint
+        ? chainData.meta.fingerprint
+        : "";
+      pagesChecked += 1;
+    } while (fingerprint && pagesChecked < 10);
+
+    if (!matchingTransfer) {
+      return res.status(409).json({
+        error: "No confirmed USDT transfer matching this transaction hash was found for the receiving wallet."
+      });
+    }
+
+    const validTransfer =
+      matchingTransfer.type === "Transfer" &&
+      matchingTransfer.success !== false &&
+      matchingTransfer.to === walletAddress &&
+      matchingTransfer.token_info &&
+      matchingTransfer.token_info.address === TRON_USDT_CONTRACT &&
+      Number(matchingTransfer.token_info.decimals) === 6 &&
+      /^\\d+$/.test(String(matchingTransfer.value || "")) &&
+      BigInt(matchingTransfer.value) === expectedUnits;
+
+    if (!validTransfer) {
+      return res.status(409).json({
+        error: "The confirmed transaction does not match the required USDT token, receiving wallet, or exact invoice amount."
+      });
+    }
+
     const result = await pool.query(
       `UPDATE employer_invoices
-       SET status = 'paid', paid_at = NOW()
+       SET status = 'paid', paid_at = NOW(), verified_at = NOW()
        WHERE id = $1 AND status = 'submitted'
-         AND transaction_hash IS NOT NULL
-       RETURNING id, reference, status, paid_at`,
-      [id]
+         AND transaction_hash = $2
+       RETURNING id, reference, status, paid_at, verified_at`,
+      [id, invoice.transaction_hash]
     );
 
     if (!result.rowCount) {
       return res.status(409).json({
-        error: "Only invoices with a submitted transaction can be marked paid. Verify the transaction on the TRON network first."
+        error: "Invoice changed while verification was running. Refresh the invoice list and try again."
       });
     }
 
     res.json({
-      message: "Invoice marked paid after administrator verification.",
+      message: "Confirmed TRC20 USDT payment verified. Invoice marked paid.",
       invoice: result.rows[0]
     });
   } catch (err) {
-    console.error("Mark invoice paid error:", err);
-    res.status(500).json({ error: "Unable to update invoice payment status." });
+    console.error("Verify invoice payment error:", err);
+    res.status(500).json({
+      error: "Unable to verify the payment. Please try again later."
+    });
   }
 });
 
