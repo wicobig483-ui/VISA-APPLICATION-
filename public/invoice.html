@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Employer Invoice | Canada Employment Portal</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+<header class="top">
+  <div class="wrap nav">
+    <a class="brand" href="/">Canada Employment Portal</a>
+    <a href="/">Home</a>
+  </div>
+</header>
+<main class="wrap admin">
+  <section class="panel narrow">
+    <p class="eyebrow">EMPLOYER PAYMENT</p>
+    <h1>Recruitment invoice</h1>
+    <p id="invoiceMessage" class="result" role="status">Loading invoice...</p>
+    <div id="invoiceDetails" hidden>
+      <p><strong>Invoice reference:</strong> <span id="invoiceReference"></span></p>
+      <p><strong>Employer:</strong> <span id="employerName"></span></p>
+      <hr>
+      <p>Recruitment amount: <strong id="baseAmount"></strong></p>
+      <p>Employer service fee (8%): <strong id="feeAmount"></strong></p>
+      <h2>Total due: <span id="totalAmount"></span></h2>
+      <p><strong>Payment method:</strong> USDT on TRON (TRC20) only</p>
+      <div id="walletPanel">
+        <p><strong>Receiving wallet address</strong></p>
+        <p id="walletAddress" style="overflow-wrap:anywhere"></p>
+        <button id="copyWallet" class="btn secondary" type="button">Copy wallet address</button>
+      </div>
+      <p class="muted">Send the exact total in USDT using the TRC20 network. Do not send USDT through another network. Network fees charged by your wallet are separate.</p>
+      <form id="transactionForm">
+        <label>TRON transaction hash *
+          <input name="transactionHash" minlength="64" maxlength="64" pattern="[a-fA-F0-9]{64}" required placeholder="64-character transaction hash">
+        </label>
+        <button id="submitTransaction" class="btn" type="submit">Submit transaction for verification</button>
+      </form>
+      <p id="paymentStatus" class="result" role="status"></p>
+      <p class="muted">Submitting a transaction hash does not mean payment is confirmed. The administrator must verify the transfer on the TRON network before the invoice is marked paid.</p>
+    </div>
+  </section>
+</main>
+<script src="/invoice.js"></script>
+</body>
+</html>
