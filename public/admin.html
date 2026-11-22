@@ -298,6 +298,31 @@
 
     </section>
 
+
+    <!-- EMPLOYER INVOICES -->
+    <section class="panel section">
+      <h2>Employer invoices (8% service fee)</h2>
+      <p>Create an invoice for an employer. Applicants can continue applying for free.</p>
+      <form id="invoiceForm" class="form-grid">
+        <label>Employer name *
+          <input name="employerName" maxlength="150" required>
+        </label>
+        <label>Employer email *
+          <input name="employerEmail" type="email" maxlength="254" required>
+        </label>
+        <label>Recruitment amount (USD) *
+          <input name="baseAmount" type="number" min="0.01" max="10000000" step="0.01" required>
+        </label>
+        <div class="full">
+          <button class="btn" type="submit">Create invoice</button>
+          <p id="invoiceResult" class="result" role="status"></p>
+        </div>
+      </form>
+      <h3>Invoice records</h3>
+      <button id="refreshInvoices" class="btn secondary" type="button">Refresh invoices</button>
+      <div id="invoicesList" class="table-wrap"><p>Sign in to load invoices.</p></div>
+    </section>
+
     <!-- APPLICATIONS -->
     <section class="section">
 
