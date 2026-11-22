@@ -275,7 +275,8 @@ async function showDashboard() {
     await Promise.all([
       loadApplications(),
       loadGallery(),
-      loadJobs()
+      loadJobs(),
+      loadInvoices()
     ]);
 
   } catch {
@@ -1017,6 +1018,108 @@ if (loadApplicationsButton) {
     loadApplications
   );
 }
+
+
+ // EMPLOYER INVOICES
+const invoiceForm = $("#invoiceForm");
+
+if (invoiceForm) {
+  invoiceForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const button = invoiceForm.querySelector('[type="submit"]');
+    const fields = Object.fromEntries(new FormData(invoiceForm).entries());
+    button.disabled = true;
+    msg($("#invoiceResult"), "Creating invoice...");
+    try {
+      const result = await api("/api/admin/invoices", {
+        method: "POST",
+        body: JSON.stringify(fields)
+      });
+      const url = new URL(result.paymentUrl, location.origin).href;
+      msg($("#invoiceResult"), "Invoice " + result.invoice.reference + " created. Payment page: " + url);
+      invoiceForm.reset();
+      await loadInvoices();
+    } catch (err) {
+      msg($("#invoiceResult"), err.message, true);
+    } finally {
+      button.disabled = false;
+    }
+  });
+}
+
+async function loadInvoices() {
+  const box = $("#invoicesList");
+  if (!box) return;
+  box.textContent = "Loading invoices...";
+  try {
+    const rows = await api("/api/admin/invoices");
+    if (!rows.length) {
+      box.textContent = "No employer invoices have been created.";
+      return;
+    }
+    const table = document.createElement("table");
+    const head = document.createElement("tr");
+    ["Invoice","Employer","Base","8% fee","Total","Status","Transaction","Action"].forEach((label) => {
+      const th = document.createElement("th");
+      th.textContent = label;
+      head.append(th);
+    });
+    const thead = document.createElement("thead");
+    thead.append(head);
+    table.append(thead);
+    const body = document.createElement("tbody");
+    rows.forEach((invoice) => {
+      const tr = document.createElement("tr");
+      const values = [
+        invoice.reference,
+        invoice.employer_name + "\\n" + invoice.employer_email,
+        "$" + Number(invoice.base_amount).toFixed(2),
+        "$" + Number(invoice.fee_amount).toFixed(2),
+        "$" + Number(invoice.total_amount).toFixed(2),
+        invoice.status,
+        invoice.transaction_hash || "Not submitted"
+      ];
+      values.forEach((value) => {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.append(td);
+      });
+      const actionCell = document.createElement("td");
+      if (invoice.status === "submitted") {
+        const verify = document.createElement("button");
+        verify.type = "button";
+        verify.className = "btn";
+        verify.textContent = "Mark paid";
+        verify.addEventListener("click", async () => {
+          if (!confirm("Only continue after verifying this transaction on the TRON network. Mark invoice " + invoice.reference + " as paid?")) return;
+          verify.disabled = true;
+          try {
+            await api("/api/admin/invoices/" + invoice.id + "/paid", {
+              method: "PATCH",
+              body: "{}"
+            });
+            await loadInvoices();
+          } catch (err) {
+            alert(err.message);
+            verify.disabled = false;
+          }
+        });
+        actionCell.append(verify);
+      } else {
+        actionCell.textContent = invoice.status === "paid" ? "Verified" : "Awaiting payment";
+      }
+      tr.append(actionCell);
+      body.append(tr);
+    });
+    table.append(body);
+    box.replaceChildren(table);
+  } catch (err) {
+    box.textContent = err.message;
+  }
+}
+
+const refreshInvoicesButton = $("#refreshInvoices");
+if (refreshInvoicesButton) refreshInvoicesButton.addEventListener("click", loadInvoices);
 
 // START
 showDashboard();
