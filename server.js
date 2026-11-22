@@ -425,7 +425,19 @@ app.post("/api/applications", async (req, res) => {
       req.body.consent === "on" ||
       req.body.consent === 1 ||
       req.body.consent === "1";
-
+console.log("APPLICATION VALIDATION:", {
+  fullName: fullName ? "PROVIDED" : "EMPTY",
+  email: validEmail(email) ? "VALID" : "INVALID",
+  phone: phone ? "PROVIDED" : "EMPTY",
+  phoneValid: validPhone(phone),
+  country: country ? "PROVIDED" : "EMPTY",
+  occupation: occupation ? "PROVIDED" : "EMPTY",
+  experience: experience ? "PROVIDED" : "EMPTY",
+  education: education ? "PROVIDED" : "EMPTY",
+  cvStatus: cvStatus ? "PROVIDED" : "EMPTY",
+  consent,
+  jobId
+});
     if (
       !fullName ||
       !validEmail(email) ||
