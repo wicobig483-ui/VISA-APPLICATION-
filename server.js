@@ -291,6 +291,7 @@ async function initializeDatabase() {
     );
 
     ALTER TABLE employer_invoices ADD COLUMN IF NOT EXISTS verified_at TIMESTAMPTZ;
+    ALTER TABLE employer_invoices ALTER COLUMN currency SET DEFAULT 'USDT';
 
     CREATE INDEX IF NOT EXISTS employer_invoices_created_at_idx
       ON employer_invoices (created_at DESC);
@@ -1410,7 +1411,7 @@ app.get("/api/invoices/:reference", async (req, res) => {
     res.json({
       invoice: result.rows[0],
       network: "TRON (TRC20)",
-      walletAddress: process.env.USDT_TRC20_ADDRESS || null
+      walletAddress: process.env.USDT_TRC20_ADDRESS || DEFAULT_USDT_TRC20_ADDRESS
     });
   } catch (err) {
     console.error("Public invoice lookup error:", err);
@@ -1429,7 +1430,7 @@ app.post("/api/invoices/:reference/transaction", async (req, res) => {
       });
     }
 
-    if (!process.env.USDT_TRC20_ADDRESS) {
+    if (!(process.env.USDT_TRC20_ADDRESS || DEFAULT_USDT_TRC20_ADDRESS)) {
       return res.status(503).json({
         error: "USDT TRC20 payment details are not configured. Contact the administrator."
       });
