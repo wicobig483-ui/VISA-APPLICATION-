@@ -636,29 +636,16 @@ function renderJob(job) {
     details.appendChild(requirements);
   }
 
-  const applyButton = createElement(
-    "button",
-    "job-apply-button",
-    "Apply for this job"
-  );
+  if (job.salary) {
+    details.appendChild(
+      createElement("p", "job-salary", `Salary: ${job.salary}`)
+    );
+  }
 
-  applyButton.type = "button";
+  const applyLink = createElement("a", "job-apply-link", "Apply for this job");
+  applyLink.href = "#apply";
 
-  applyButton.addEventListener("click", () => {
-    const jobSelect = $("#jobSelect");
-
-    if (jobSelect) {
-      jobSelect.value = String(job.id);
-    }
-
-    const applySection = $("#apply");
-
-    if (applySection) {
-      applySection.scrollIntoView({ behavior: "smooth" });
-    }
-  });
-
-  details.appendChild(applyButton);
+  details.appendChild(applyLink);
   card.appendChild(details);
 
   return card;
@@ -670,258 +657,141 @@ function renderJob(job) {
 
 async function loadJobs() {
   const jobsContainer = $("#jobs");
-  const jobSelect = $("#jobSelect");
 
   if (!jobsContainer) return;
 
-  jobsContainer.classList.add("job-list-layout");
-
-  jobsContainer.replaceChildren(
-    createElement("p", "loading", "Loading vacancies…")
-  );
+  jobsContainer.textContent = "Loading vacancies...";
 
   try {
-    const jobs = await api("/api/jobs", {
-      method: "GET",
-      headers: {}
+    const data = await api("/api/jobs");
+    const jobs = Array.isArray(data) ? data : data.jobs || [];
+
+    jobsContainer.textContent = "";
+
+    if (jobs.length === 0) {
+      jobsContainer.textContent = "No vacancies are currently available.";
+      updateJobSelect([]);
+      return;
+    }
+
+    jobs.forEach(job => {
+      jobsContainer.appendChild(renderJob(job));
     });
 
-    jobsContainer.replaceChildren();
-
-    if (!Array.isArray(jobs) || jobs.length === 0) {
-      jobsContainer.appendChild(
-        createElement(
-          "p",
-          "empty-state",
-          "There are no active vacancies at the moment."
-        )
-      );
-    } else {
-      jobs.forEach(job => {
-        jobsContainer.appendChild(renderJob(job));
-      });
-    }
-
-    if (jobSelect) {
-      const previousValue = jobSelect.value;
-
-      jobSelect.replaceChildren();
-
-      const placeholder = createElement(
-        "option",
-        "",
-        "Select a vacancy"
-      );
-
-      placeholder.value = "";
-      jobSelect.appendChild(placeholder);
-
-      if (Array.isArray(jobs)) {
-        jobs.forEach(job => {
-          const option = createElement(
-            "option",
-            "",
-            job.title || `Vacancy ${job.id}`
-          );
-
-          option.value = String(job.id);
-          jobSelect.appendChild(option);
-        });
-
-        if (jobs.some(job => String(job.id) === previousValue)) {
-          jobSelect.value = previousValue;
-        }
-      }
-    }
+    updateJobSelect(jobs);
 
   } catch (error) {
-    jobsContainer.replaceChildren(
-      createElement("p", "error", error.message)
+    jobsContainer.textContent = "Unable to load vacancies at this time.";
+    console.error("Load jobs error:", error);
+  }
+}
+
+/* UPDATE APPLICATION JOB SELECT */
+
+function updateJobSelect(jobs) {
+  const select = $("#jobSelect");
+
+  if (!select) return;
+
+  const currentValue = select.value;
+
+  select.textContent = "";
+
+  const defaultOption = createElement(
+    "option",
+    "",
+    "Select a vacancy"
+  );
+
+  defaultOption.value = "";
+  select.appendChild(defaultOption);
+
+  jobs.forEach(job => {
+    const option = createElement(
+      "option",
+      "",
+      job.title || "Vacancy"
     );
+
+    option.value = job.id == null ? "" : String(job.id);
+    select.appendChild(option);
+  });
+
+  if (currentValue) {
+    select.value = currentValue;
   }
 }
 
 /* =========================================
-   LOAD GALLERY PHOTOS
+   LOAD CANADA GALLERY
 ========================================= */
 
-async function loadGalleryPhotos() {
+async function loadGallery() {
   const gallery = $("#canadaGalleryGrid");
 
   if (!gallery) return;
 
   try {
-    const photos = await api("/api/gallery", {
-      method: "GET",
-      headers: {}
-    });
+    const data = await api("/api/gallery");
+    const images = Array.isArray(data) ? data : data.images || [];
 
-    gallery.replaceChildren();
+    gallery.textContent = "";
 
-    if (!Array.isArray(photos) || photos.length === 0) {
-      gallery.appendChild(
-        createElement(
-          "p",
-          "empty-state",
-          "Gallery photos will appear here."
-        )
-      );
+    images.forEach(item => {
+      if (!item.image_url) return;
 
-      return;
-    }
-
-    photos.forEach(photo => {
-      if (!photo.image_url) return;
-
-      const item = createElement("figure", "gallery-item");
-      const image = createElement("img", "gallery-image");
-
-      image.src = photo.image_url;
-      image.alt = photo.title || "Recruitment gallery photo";
+      const image = createElement("img", "canada-gallery-image");
+      image.src = item.image_url;
+      image.alt = item.alt || "Canada";
       image.loading = "lazy";
 
-      item.appendChild(image);
-
-      if (photo.title) {
-        item.appendChild(
-          createElement("figcaption", "gallery-caption", photo.title)
-        );
-      }
-
-      gallery.appendChild(item);
+      gallery.appendChild(image);
     });
 
   } catch (error) {
-    gallery.replaceChildren(
-      createElement("p", "error", error.message)
-    );
+    console.error("Load gallery error:", error);
   }
 }
 
 /* =========================================
-   PAYPAL PAYMENT INSTRUCTIONS
+   APPLICATION FORM
 ========================================= */
 
-function showPaymentInstructions(target, data) {
-  if (!target) return;
+function setupApplicationForm() {
+  const form = $("#applicationForm");
+  const result = $("#applyResult");
 
-  target.replaceChildren();
+  if (!form) return;
 
-  const addLine = (text, className) => {
-    const line = createElement("span", className || "", text);
-
-    target.appendChild(line);
-    target.appendChild(document.createElement("br"));
-  };
-
-  addLine(
-    data.message || "Your application has been received.",
-    "success"
-  );
-
-  addLine(
-    `Your application reference: ${data.reference || "Not provided"}`,
-    "application-reference"
-  );
-
-  addLine(
-    `Agency application-processing fee: ${data.processingFee || "USD 40"}`,
-    "processing-fee"
-  );
-
-  addLine(
-    data.paymentNotice ||
-      "This is an agency processing fee, not a Canadian government or IRCC visa fee. Payment does not guarantee employment or visa approval.",
-    "payment-disclaimer"
-  );
-
-  addLine(
-    "If you choose to pay this agency processing fee, use the PayPal link below. Keep your application reference for your records.",
-    "payment-instructions"
-  );
-
-  const paymentLink = createElement(
-    "a",
-    "paypal-payment-button",
-    "Pay USD 40 with PayPal"
-  );
-
-  paymentLink.href =
-    data.paymentUrl ||
-    "https://www.paypal.com/ncp/payment/BPZVY3EVXS2S4";
-
-  paymentLink.target = "_blank";
-  paymentLink.rel = "noopener noreferrer";
-
-  target.appendChild(paymentLink);
-  target.appendChild(document.createElement("br"));
-
-  addLine(
-    "Payment is not confirmed by this website. The agency must verify the transaction separately.",
-    "payment-status-note"
-  );
-}
-
-/* =========================================
-   RELOAD VACANCIES
-========================================= */
-
-const reloadJobsButton = $("#reloadJobs");
-
-if (reloadJobsButton) {
-  reloadJobsButton.addEventListener("click", loadJobs);
-}
-
-/* =========================================
-   APPLICATION SUBMISSION
-========================================= */
-
-const applicationForm = $("#applicationForm");
-
-if (applicationForm) {
-  applicationForm.addEventListener("submit", async event => {
+  form.addEventListener("submit", async event => {
     event.preventDefault();
 
-    const result = $("#applyResult");
+    const submitButton = form.querySelector('[type="submit"]');
 
-    const submitButton = applicationForm.querySelector(
-      'button[type="submit"], button:not([type]), input[type="submit"]'
-    );
+    if (submitButton) submitButton.disabled = true;
 
-    if (submitButton) {
-      submitButton.disabled = true;
-    }
+    show(result, "Submitting your application...");
 
-    show(result, "Submitting your application…");
+    const formData = new FormData(form);
+    const application = Object.fromEntries(formData.entries());
 
     try {
-      const formData = new FormData(applicationForm);
-      const payload = Object.fromEntries(formData.entries());
-
-      const consentInput = applicationForm.querySelector(
-        '[name="consent"]'
-      );
-
-      payload.consent = Boolean(
-        consentInput && consentInput.checked
-      );
-
       const data = await api("/api/applications", {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify(application)
       });
 
-      showPaymentInstructions(result, data);
+      show(
+        result,
+        data.message || "Your application has been submitted successfully."
+      );
 
-      applicationForm.reset();
+      form.reset();
 
     } catch (error) {
-      show(result, error.message, true);
-
+      show(result, error.message || "Unable to submit your application.", true);
     } finally {
-      if (submitButton) {
-        submitButton.disabled = false;
-      }
+      if (submitButton) submitButton.disabled = false;
     }
   });
 }
@@ -930,47 +800,64 @@ if (applicationForm) {
    APPLICATION TRACKING
 ========================================= */
 
-const trackForm = $("#trackForm");
+function setupTrackingForm() {
+  const form = $("#trackForm");
+  const result = $("#trackResult");
 
-if (trackForm) {
-  trackForm.addEventListener("submit", async event => {
+  if (!form) return;
+
+  form.addEventListener("submit", async event => {
     event.preventDefault();
 
-    const result = $("#trackResult");
+    const submitButton = form.querySelector('[type="submit"]');
 
-    show(result, "Checking your application…");
+    if (submitButton) submitButton.disabled = true;
+
+    show(result, "Checking your application...");
+
+    const formData = new FormData(form);
+    const tracking = Object.fromEntries(formData.entries());
 
     try {
-      const formData = new FormData(trackForm);
-      const payload = Object.fromEntries(formData.entries());
-
       const data = await api("/api/track", {
         method: "POST",
-        body: JSON.stringify(payload)
+        body: JSON.stringify(tracking)
       });
 
-      const details = [
-        `Reference: ${data.reference}`,
-        `Status: ${data.status}`,
-        `Vacancy: ${data.job_title || "Not specified"}`,
-        data.updated_at
-          ? `Last updated: ${new Date(data.updated_at).toLocaleString()}`
-          : ""
-      ].filter(Boolean);
-
-      show(result, details.join("\n"));
-      result.style.whiteSpace = "pre-line";
+      show(
+        result,
+        data.message || "Your tracking request has been received."
+      );
 
     } catch (error) {
-      show(result, error.message, true);
+      show(result, error.message || "Unable to track your application.", true);
+    } finally {
+      if (submitButton) submitButton.disabled = false;
     }
   });
+}
+
+/* =========================================
+   RELOAD VACANCIES
+========================================= */
+
+function setupReloadButton() {
+  const button = $("#reloadJobs");
+
+  if (!button) return;
+
+  button.addEventListener("click", loadJobs);
 }
 
 /* =========================================
    INITIALIZE WEBSITE
 ========================================= */
 
-renderInformationCentre();
-loadJobs();
-loadGalleryPhotos();
+document.addEventListener("DOMContentLoaded", () => {
+  renderInformationCentre();
+  loadJobs();
+  loadGallery();
+  setupApplicationForm();
+  setupTrackingForm();
+  setupReloadButton();
+});
