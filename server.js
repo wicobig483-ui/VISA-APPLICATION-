@@ -1,3 +1,4 @@
+
 "use strict";
 
 const express = require("express");
@@ -67,7 +68,9 @@ function optimizedImageUrl(publicId, fallbackUrl) {
   return cloudinary.url(publicId, {
     secure: true,
     resource_type: "image",
-    transformation: [{ quality: "auto", fetch_format: "auto" }]
+    transformation: [
+      { quality: "auto", fetch_format: "auto" }
+    ]
   });
 }
 
@@ -96,12 +99,20 @@ const imageStorage = new CloudinaryStorage({
 
 const upload = multer({
   storage: imageStorage,
-  limits: { fileSize: 5 * 1024 * 1024 },
+  limits: {
+    fileSize: 5 * 1024 * 1024
+  },
   fileFilter: (_req, file, cb) => {
-    const allowed = ["image/jpeg", "image/png", "image/webp"];
+    const allowed = [
+      "image/jpeg",
+      "image/png",
+      "image/webp"
+    ];
 
     if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Only JPG, PNG and WEBP images are allowed."));
+      return cb(
+        new Error("Only JPG, PNG and WEBP images are allowed.")
+      );
     }
 
     cb(null, true);
@@ -119,12 +130,20 @@ const videoStorage = new CloudinaryStorage({
 
 const videoUpload = multer({
   storage: videoStorage,
-  limits: { fileSize: 100 * 1024 * 1024 },
+  limits: {
+    fileSize: 100 * 1024 * 1024
+  },
   fileFilter: (_req, file, cb) => {
-    const allowed = ["video/mp4", "video/quicktime", "video/webm"];
+    const allowed = [
+      "video/mp4",
+      "video/quicktime",
+      "video/webm"
+    ];
 
     if (!allowed.includes(file.mimetype)) {
-      return cb(new Error("Only MP4, MOV and WEBM videos are allowed."));
+      return cb(
+        new Error("Only MP4, MOV and WEBM videos are allowed.")
+      );
     }
 
     cb(null, true);
@@ -142,7 +161,11 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        "img-src": ["'self'", "data:", "https://res.cloudinary.com"],
+        "img-src": [
+          "'self'",
+          "data:",
+          "https://res.cloudinary.com"
+        ],
         "media-src": [
           "'self'",
           "https://res.cloudinary.com",
@@ -154,7 +177,12 @@ app.use(
 );
 
 app.use(express.json({ limit: "30kb" }));
-app.use(express.urlencoded({ extended: false, limit: "30kb" }));
+app.use(
+  express.urlencoded({
+    extended: false,
+    limit: "30kb"
+  })
+);
 
 // =====================================
 // SESSION
@@ -194,7 +222,7 @@ const apiLimiter = rateLimit({
 app.use("/api", apiLimiter);
 
 // =====================================
-// DATABASE INITIALIZATION AND MIGRATIONS
+// DATABASE INITIALIZATION
 // =====================================
 
 async function initializeDatabase() {
@@ -331,11 +359,18 @@ app.get("/api/jobs", async (_req, res) => {
 
     res.json(result.rows.map((job) => ({
       ...job,
-      image_url: optimizedImageUrl(job.image_public_id, job.image_url),
-      video_url: optimizedVideoUrl(job.video_public_id, job.video_url)
+      image_url: optimizedImageUrl(
+        job.image_public_id,
+        job.image_url
+      ),
+      video_url: optimizedVideoUrl(
+        job.video_public_id,
+        job.video_url
+      )
     })));
   } catch (err) {
     console.error("Public jobs error:", err);
+
     res.status(500).json({
       error: "Unable to load vacancies."
     });
@@ -358,6 +393,7 @@ app.get("/api/gallery", async (_req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("Public gallery error:", err);
+
     res.status(500).json({
       error: "Unable to load gallery."
     });
@@ -379,9 +415,10 @@ app.post("/api/applications", async (req, res) => {
     const education = clean(req.body.education, 120);
     const cvStatus = clean(req.body.cvStatus, 80);
     const message = clean(req.body.message, 1500);
-    const jobId = req.body.jobId ? Number(req.body.jobId) : null;
+    const jobId = req.body.jobId
+      ? Number(req.body.jobId)
+      : null;
 
-    // HTML checkboxes commonly submit the string "on".
     const consent =
       req.body.consent === true ||
       req.body.consent === "true" ||
@@ -390,12 +427,20 @@ app.post("/api/applications", async (req, res) => {
       req.body.consent === "1";
 
     if (
-      !fullName || !validEmail(email) || !phone || !validPhone(phone) ||
-      !country || !occupation || !experience || !education ||
-      !cvStatus || !consent
+      !fullName ||
+      !validEmail(email) ||
+      !phone ||
+      !validPhone(phone) ||
+      !country ||
+      !occupation ||
+      !experience ||
+      !education ||
+      !cvStatus ||
+      !consent
     ) {
       return res.status(400).json({
-        error: "Complete all required fields, enter a valid phone number, and confirm the consent statement."
+        error:
+          "Complete all required fields, enter a valid phone number, and confirm the consent statement."
       });
     }
 
@@ -422,7 +467,8 @@ app.post("/api/applications", async (req, res) => {
     }
 
     const reference =
-      "CA-" + crypto.randomBytes(6).toString("hex").toUpperCase();
+      "CA-" +
+      crypto.randomBytes(6).toString("hex").toUpperCase();
 
     await pool.query(
       `INSERT INTO applications
@@ -430,8 +476,17 @@ app.post("/api/applications", async (req, res) => {
         experience, education, cv_status, job_id, message)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
-        reference, fullName, email, phone, country, occupation,
-        experience, education, cvStatus, jobId, message
+        reference,
+        fullName,
+        email,
+        phone,
+        country,
+        occupation,
+        experience,
+        education,
+        cvStatus,
+        jobId,
+        message
       ]
     );
 
@@ -441,6 +496,7 @@ app.post("/api/applications", async (req, res) => {
     });
   } catch (err) {
     console.error("Application submission error:", err);
+
     res.status(500).json({
       error: "Unable to submit your application. Please try again."
     });
@@ -453,8 +509,15 @@ app.post("/api/applications", async (req, res) => {
 
 app.post("/api/track", async (req, res) => {
   try {
-    const reference = clean(req.body.reference, 30).toUpperCase();
-    const email = clean(req.body.email, 254).toLowerCase();
+    const reference = clean(
+      req.body.reference,
+      30
+    ).toUpperCase();
+
+    const email = clean(
+      req.body.email,
+      254
+    ).toLowerCase();
 
     if (!reference || !validEmail(email)) {
       return res.status(400).json({
@@ -473,26 +536,31 @@ app.post("/api/track", async (req, res) => {
 
     if (!result.rowCount) {
       return res.status(404).json({
-        error: "No matching application was found. Check your reference number and email."
+        error:
+          "No matching application was found. Check your reference number and email."
       });
     }
 
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Application tracking error:", err);
+
     res.status(500).json({
       error: "Unable to check application status."
     });
   }
 });
-
+       
 // =====================================
 // ADMIN: LOGIN
 // =====================================
 
 app.post(
   "/api/admin/login",
-  rateLimit({ windowMs: 15 * 60 * 1000, limit: 8 }),
+  rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 8
+  }),
   (req, res) => {
     const email = clean(req.body.email, 254).toLowerCase();
     const password = String(req.body.password ?? "");
@@ -510,6 +578,7 @@ app.post(
     req.session.regenerate((err) => {
       if (err) {
         console.error("Session regeneration error:", err);
+
         return res.status(500).json({
           error: "Could not start admin session."
         });
@@ -520,19 +589,22 @@ app.post(
       req.session.save((saveError) => {
         if (saveError) {
           console.error("Session save error:", saveError);
+
           return res.status(500).json({
             error: "Could not save admin session."
           });
         }
 
-        res.json({ message: "Signed in." });
+        res.json({
+          message: "Signed in."
+        });
       });
     });
   }
 );
 
 // =====================================
-// ADMIN: LOGOUT AND SESSION STATUS
+// ADMIN: LOGOUT
 // =====================================
 
 app.post("/api/admin/logout", adminOnly, (req, res) => {
@@ -549,12 +621,20 @@ app.post("/api/admin/logout", adminOnly, (req, res) => {
       sameSite: "strict"
     });
 
-    res.json({ message: "Signed out." });
+    res.json({
+      message: "Signed out."
+    });
   });
 });
 
+// =====================================
+// ADMIN: SESSION STATUS
+// =====================================
+
 app.get("/api/admin/me", adminOnly, (_req, res) => {
-  res.json({ authenticated: true });
+  res.json({
+    authenticated: true
+  });
 });
 
 // =====================================
@@ -577,6 +657,7 @@ app.get("/api/admin/applications", adminOnly, async (_req, res) => {
     res.json(result.rows);
   } catch (err) {
     console.error("Admin applications error:", err);
+
     res.status(500).json({
       error: "Unable to load applications."
     });
@@ -584,7 +665,7 @@ app.get("/api/admin/applications", adminOnly, async (_req, res) => {
 });
 
 // =====================================
-// EMAIL: RESEND EMAIL HELPERS
+// EMAIL: RESEND EMAIL HELPER
 // =====================================
 
 async function sendApplicantEmail({ to, subject, html, text }) {
@@ -600,33 +681,44 @@ async function sendApplicantEmail({ to, subject, html, text }) {
     );
   }
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM,
-      to: [to],
-      subject,
-      html,
-      text
-    })
-  });
+  const response = await fetch(
+    "https://api.resend.com/emails",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        from: process.env.EMAIL_FROM,
+        to: [to],
+        subject,
+        html,
+        text
+      })
+    }
+  );
 
   const responseText = await response.text();
+
   let result = {};
 
   try {
-    result = responseText ? JSON.parse(responseText) : {};
+    result = responseText
+      ? JSON.parse(responseText)
+      : {};
   } catch (_err) {
-    result = { message: responseText };
+    result = {
+      message: responseText
+    };
   }
 
   if (!response.ok) {
     const detail =
-      result.message || result.error || responseText || response.statusText;
+      result.message ||
+      result.error ||
+      responseText ||
+      response.statusText;
 
     throw new Error(
       `Resend rejected the email (${response.status}): ${detail}`
@@ -652,6 +744,7 @@ async function sendApplicationReceivedEmail(application) {
   return sendApplicantEmail({
     to: application.email,
     subject: "We received your recruitment application",
+
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#253247">
         <h2>Application Received</h2>
@@ -663,6 +756,7 @@ async function sendApplicationReceivedEmail(application) {
         <p>Kind regards,<br>Recruitment Team</p>
       </div>
     `,
+
     text:
       `Dear ${application.full_name},\n` +
       "Thank you. We have received your recruitment application.\n" +
@@ -684,6 +778,7 @@ async function sendUnderReviewEmail(application) {
   return sendApplicantEmail({
     to: application.email,
     subject: "Your recruitment application is under review",
+
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#253247">
         <h2>Application Status Update</h2>
@@ -695,6 +790,7 @@ async function sendUnderReviewEmail(application) {
         <p>Kind regards,<br>Recruitment Team</p>
       </div>
     `,
+
     text:
       `Dear ${application.full_name},\n` +
       "Your recruitment application is now Under review.\n" +
@@ -703,5 +799,503 @@ async function sendUnderReviewEmail(application) {
       "This is not a job offer, employment confirmation, or visa approval.\n" +
       "Kind regards,\nRecruitment Team"
   });
-}
+         }
 
+// =====================================
+// ADMIN: UPDATE APPLICATION STATUS
+// =====================================
+
+app.patch(
+  "/api/admin/applications/:id/status",
+  adminOnly,
+  async (req, res) => {
+    const id = Number(req.params.id);
+    const status = clean(req.body.status, 50);
+
+    const allowedStatuses = [
+      "Received",
+      "Under review",
+      "Approved",
+      "Rejected"
+    ];
+
+    if (!Number.isSafeInteger(id) || id < 1) {
+      return res.status(400).json({
+        error: "Invalid application ID."
+      });
+    }
+
+    if (!allowedStatuses.includes(status)) {
+      return res.status(400).json({
+        error: "Invalid application status."
+      });
+    }
+
+    try {
+      const result = await pool.query(
+        `UPDATE applications
+         SET status = $1,
+             updated_at = NOW()
+         WHERE id = $2
+         RETURNING *`,
+        [status, id]
+      );
+
+      if (!result.rowCount) {
+        return res.status(404).json({
+          error: "Application not found."
+        });
+      }
+
+      const application = result.rows[0];
+
+      if (
+        status === "Under review" &&
+        !application.under_review_email_sent_at
+      ) {
+        try {
+          await sendUnderReviewEmail(application);
+
+          await pool.query(
+            `UPDATE applications
+             SET under_review_email_sent_at = NOW()
+             WHERE id = $1
+               AND under_review_email_sent_at IS NULL`,
+            [id]
+          );
+        } catch (emailError) {
+          console.error(
+            "Under-review email error:",
+            emailError
+          );
+        }
+      }
+
+      res.json({
+        message: "Application status updated successfully.",
+        application: {
+          id: application.id,
+          reference: application.reference,
+          status: application.status,
+          updated_at: application.updated_at
+        }
+      });
+    } catch (err) {
+      console.error("Update application status error:", err);
+
+      res.status(500).json({
+        error: "Unable to update application status."
+      });
+    }
+  }
+);
+
+// =====================================
+// ADMIN: LIST JOBS
+// =====================================
+
+app.get("/api/admin/jobs", adminOnly, async (_req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT *
+      FROM jobs
+      ORDER BY created_at DESC
+    `);
+
+    res.json(result.rows.map((job) => ({
+      ...job,
+      image_url: optimizedImageUrl(
+        job.image_public_id,
+        job.image_url
+      ),
+      video_url: optimizedVideoUrl(
+        job.video_public_id,
+        job.video_url
+      )
+    })));
+  } catch (err) {
+    console.error("Admin jobs error:", err);
+
+    res.status(500).json({
+      error: "Unable to load jobs."
+    });
+  }
+});
+
+// =====================================
+// ADMIN: CREATE VACANCY
+// =====================================
+
+app.post("/api/admin/jobs", adminOnly, async (req, res) => {
+  try {
+    const title = clean(req.body.title, 150);
+    const location = clean(req.body.location, 150);
+    const description = clean(req.body.description, 5000);
+    const requirements = clean(req.body.requirements, 3000);
+
+    const employmentType = clean(
+      req.body.employmentType || "Full-time",
+      80
+    );
+
+    if (!title || !location || !description) {
+      return res.status(400).json({
+        error: "Title, location and description are required."
+      });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO jobs
+       (title, location, description, requirements, employment_type)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING *`,
+      [
+        title,
+        location,
+        description,
+        requirements,
+        employmentType
+      ]
+    );
+
+    res.status(201).json({
+      message: "Vacancy created successfully.",
+      job: result.rows[0]
+    });
+  } catch (err) {
+    console.error("Create job error:", err);
+
+    res.status(500).json({
+      error: "Unable to create vacancy."
+    });
+  }
+});
+
+// =====================================
+// ADMIN: IMAGE UPLOAD
+// =====================================
+
+app.post(
+  "/api/admin/uploads",
+  adminOnly,
+  (req, res) => {
+    upload.single("image")(req, res, (err) => {
+      if (err) {
+        console.error("Image upload error:", err);
+
+        return res.status(400).json({
+          error: err.message || "Unable to upload image."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          error: "Please select an image."
+        });
+      }
+
+      res.status(201).json({
+        message: "Image uploaded successfully.",
+        url: req.file.path,
+        public_id: req.file.filename
+      });
+    });
+  }
+);
+
+// =====================================
+// ADMIN: VIDEO UPLOAD
+// =====================================
+
+app.post(
+  "/api/admin/video-uploads",
+  adminOnly,
+  (req, res) => {
+    videoUpload.single("video")(req, res, (err) => {
+      if (err) {
+        console.error("Video upload error:", err);
+
+        return res.status(400).json({
+          error: err.message || "Unable to upload video."
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          error: "Please select a video."
+        });
+      }
+
+      res.status(201).json({
+        message: "Video uploaded successfully.",
+        url: req.file.path,
+        public_id: req.file.filename
+      });
+    });
+  }
+);
+
+// =====================================
+// ADMIN: UPDATE VACANCY
+// =====================================
+
+app.patch(
+  "/api/admin/jobs/:id",
+  adminOnly,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({
+          error: "Invalid vacancy ID."
+        });
+      }
+
+      const title = clean(req.body.title, 150);
+      const location = clean(req.body.location, 150);
+      const description = clean(req.body.description, 5000);
+      const requirements = clean(req.body.requirements, 3000);
+
+      const employmentType = clean(
+        req.body.employmentType || "Full-time",
+        80
+      );
+
+      const active =
+        req.body.active === true ||
+        req.body.active === "true" ||
+        req.body.active === "on" ||
+        req.body.active === 1 ||
+        req.body.active === "1";
+
+      const imageUrl = clean(req.body.image_url, 2000);
+      const imagePublicId = clean(req.body.image_public_id, 300);
+      const videoUrl = clean(req.body.video_url, 2000);
+      const videoPublicId = clean(req.body.video_public_id, 300);
+
+      if (!title || !location || !description) {
+        return res.status(400).json({
+          error: "Title, location and description are required."
+        });
+      }
+
+      const result = await pool.query(
+        `UPDATE jobs
+         SET title = $1,
+             location = $2,
+             description = $3,
+             requirements = $4,
+             employment_type = $5,
+             active = $6,
+             image_url = NULLIF($7, ''),
+             image_public_id = NULLIF($8, ''),
+             video_url = NULLIF($9, ''),
+             video_public_id = NULLIF($10, '')
+         WHERE id = $11
+         RETURNING *`,
+        [
+          title,
+          location,
+          description,
+          requirements,
+          employmentType,
+          active,
+          imageUrl,
+          imagePublicId,
+          videoUrl,
+          videoPublicId,
+          id
+        ]
+      );
+
+      if (!result.rowCount) {
+        return res.status(404).json({
+          error: "Vacancy not found."
+        });
+      }
+
+      res.json({
+        message: "Vacancy updated successfully.",
+        job: result.rows[0]
+      });
+    } catch (err) {
+      console.error("Update job error:", err);
+
+      res.status(500).json({
+        error: "Unable to update vacancy."
+      });
+    }
+  }
+);
+
+// =====================================
+// ADMIN: CREATE GALLERY PHOTO
+// =====================================
+
+app.post(
+  "/api/admin/gallery",
+  adminOnly,
+  async (req, res) => {
+    try {
+      const title = clean(req.body.title, 150);
+      const description = clean(req.body.description, 2000);
+      const imageUrl = clean(req.body.image_url, 2000);
+      const imagePublicId = clean(req.body.image_public_id, 300);
+
+      if (!title || (!imageUrl && !imagePublicId)) {
+        return res.status(400).json({
+          error: "A title and uploaded image are required."
+        });
+      }
+
+      const result = await pool.query(
+        `INSERT INTO gallery_photos
+         (title, description, image_url, image_public_id)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [
+          title,
+          description,
+          imageUrl,
+          imagePublicId || null
+        ]
+      );
+
+      res.status(201).json({
+        message: "Gallery photo added successfully.",
+        photo: result.rows[0]
+      });
+    } catch (err) {
+      console.error("Create gallery photo error:", err);
+
+      res.status(500).json({
+        error: "Unable to add gallery photo."
+      });
+    }
+  }
+);
+
+// =====================================
+// ADMIN: LIST GALLERY PHOTOS
+// =====================================
+
+app.get(
+  "/api/admin/gallery",
+  adminOnly,
+  async (_req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT *
+        FROM gallery_photos
+        ORDER BY created_at DESC
+      `);
+
+      res.json(result.rows);
+    } catch (err) {
+      console.error("Admin gallery error:", err);
+
+      res.status(500).json({
+        error: "Unable to load gallery photos."
+      });
+    }
+  }
+);
+
+// =====================================
+// ADMIN: UPDATE GALLERY PHOTO
+// =====================================
+
+app.patch(
+  "/api/admin/gallery/:id",
+  adminOnly,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({
+          error: "Invalid gallery photo ID."
+        });
+      }
+
+      const title = clean(req.body.title, 150);
+      const description = clean(req.body.description, 2000);
+      const imageUrl = clean(req.body.image_url, 2000);
+      const imagePublicId = clean(req.body.image_public_id, 300);
+
+      const active =
+        req.body.active === true ||
+        req.body.active === "true" ||
+        req.body.active === "on" ||
+        req.body.active === 1 ||
+        req.body.active === "1";
+
+      if (!title) {
+        return res.status(400).json({
+          error: "Gallery photo title is required."
+        });
+      }
+
+      const result = await pool.query(
+        `UPDATE gallery_photos
+         SET title = $1,
+             description = $2,
+             image_url = COALESCE(NULLIF($3, ''), image_url),
+             image_public_id = COALESCE(NULLIF($4, ''), image_public_id),
+             active = $5
+         WHERE id = $6
+         RETURNING *`,
+        [
+          title,
+          description,
+          imageUrl,
+          imagePublicId,
+          active,
+          id
+        ]
+      );
+
+      if (!result.rowCount) {
+        return res.status(404).json({
+          error: "Gallery photo not found."
+        });
+      }
+
+      res.json({
+        message: "Gallery photo updated successfully.",
+        photo: result.rows[0]
+      });
+    } catch (err) {
+      console.error("Update gallery photo error:", err);
+
+      res.status(500).json({
+        error: "Unable to update gallery photo."
+      });
+    }
+  }
+);
+
+// =====================================
+// SERVE WEBSITE FILES
+// =====================================
+
+app.use(express.static(path.join(__dirname, "public")));
+
+// =====================================
+// SERVER STARTUP
+// =====================================
+
+const PORT = process.env.PORT || 3000;
+
+initializeDatabase()
+  .then(() => {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Server running on port ${PORT}`);
+    });
+  })
+  .catch((err) => {
+    console.error("Database initialization failed:", err);
+    process.exit(1);
+  });
+                          
