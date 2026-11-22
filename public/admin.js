@@ -431,6 +431,41 @@ async function loadJobs() {
         editJob(job);
       });
 
+      // DELETE BUTTON
+      const deleteButton = document.createElement("button");
+
+      deleteButton.type = "button";
+      deleteButton.className = "btn secondary";
+      deleteButton.textContent = "Delete vacancy";
+      deleteButton.style.marginTop = "8px";
+
+      deleteButton.addEventListener("click", async () => {
+        const confirmed = window.confirm(
+          'Delete "' + (job.title || "this vacancy") + '" permanently? This cannot be undone.'
+        );
+
+        if (!confirmed) return;
+
+        deleteButton.disabled = true;
+
+        try {
+          await api(`/api/admin/jobs/${job.id}`, {
+            method: "DELETE"
+          });
+
+          if (editingJobId === job.id) {
+            resetJobEditor();
+          }
+
+          msg($("#jobResult"), "Vacancy deleted successfully.");
+          await loadJobs();
+
+        } catch (err) {
+          alert(err.message);
+          deleteButton.disabled = false;
+        }
+      });
+
       // SHOW/HIDE BUTTON
       const toggleButton = document.createElement("button");
 
@@ -469,7 +504,8 @@ async function loadJobs() {
         status,
         media,
         editButton,
-        toggleButton
+        toggleButton,
+        deleteButton
       );
 
       list.append(card);
