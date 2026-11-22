@@ -700,4 +700,8 @@ async function sendUnderReviewEmail(application) {
       "Your recruitment application is now Under review.\n" +
       `Reference: ${application.reference}\n` +
       "Our recruitment team is reviewing your information.\n" +
-      "This is not a job offer, employment
+      "This is not a job offer, employment confirmation, or visa approval.\n" +
+      "Kind regards,\nRecruitment Team"
+  });
+}
+
