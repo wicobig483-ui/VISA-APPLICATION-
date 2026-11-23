@@ -12,6 +12,7 @@ const multer = require("multer");
 const { v2: cloudinary } = require("cloudinary");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const path = require("path");
+const nodemailer = require("nodemailer");
 
 const app = express();
 
@@ -721,69 +722,40 @@ app.get("/api/admin/applications", adminOnly, async (_req, res) => {
 });
 
 // =====================================
-// EMAIL: RESEND EMAIL HELPER
+// EMAIL: GMAIL SMTP HELPER
 // =====================================
 
 async function sendApplicantEmail({ to, subject, html, text }) {
-  if (!process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) {
+  const emailUser = process.env.EMAIL_USER;
+  const appPassword = process.env.EMAIL_APP_PASSWORD;
+
+  if (!emailUser || !appPassword) {
     throw new Error(
-      "Email is not configured. Add RESEND_API_KEY and EMAIL_FROM in Render."
+      "Email is not configured. Add EMAIL_USER and EMAIL_APP_PASSWORD in Render."
     );
   }
 
-  if (typeof fetch !== "function") {
-    throw new Error(
-      "This server requires Node.js 18 or newer for the built-in fetch API."
-    );
-  }
-
-  const response = await fetch(
-    "https://api.resend.com/emails",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        from: process.env.EMAIL_FROM,
-        to: [to],
-        subject,
-        html,
-        text
-      })
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true,
+    auth: {
+      user: emailUser,
+      pass: appPassword.replace(/\\s+/g, "")
     }
-  );
+  });
 
-  const responseText = await response.text();
-
-  let result = {};
-
-  try {
-    result = responseText
-      ? JSON.parse(responseText)
-      : {};
-  } catch (_err) {
-    result = {
-      message: responseText
-    };
-  }
-
-  if (!response.ok) {
-    const detail =
-      result.message ||
-      result.error ||
-      responseText ||
-      response.statusText;
-
-    throw new Error(
-      `Resend rejected the email (${response.status}): ${detail}`
-    );
-  }
+  const result = await transporter.sendMail({
+    from: process.env.EMAIL_FROM || emailUser,
+    to,
+    subject,
+    html,
+    text
+  });
 
   console.log(
-    "Applicant email accepted by Resend:",
-    result.id || "ID unavailable"
+    "Applicant email accepted by Gmail SMTP:",
+    result.messageId || "Message ID unavailable"
   );
 
   return result;
