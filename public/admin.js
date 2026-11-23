@@ -482,13 +482,14 @@ async function loadJobs() {
         toggleButton.disabled = true;
 
         try {
-          await api(`/api/admin/jobs/${job.id}`, {
+          const result = await api(`/api/admin/jobs/${job.id}/status`, {
             method: "PATCH",
             body: JSON.stringify({
               active: !job.active
             })
           });
 
+          msg($("#jobResult"), result.message || "Vacancy status updated.");
           await loadJobs();
 
         } catch (err) {
