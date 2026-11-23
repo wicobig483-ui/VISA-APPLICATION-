@@ -534,18 +534,22 @@ console.log("APPLICATION VALIDATION:", {
       ]
     );
 
-    try {
-      await sendApplicationReceivedEmail(insertedApplication.rows[0]);
-      await pool.query(
-        `UPDATE applications
-         SET application_received_email_sent_at = NOW()
-         WHERE id = $1
-           AND application_received_email_sent_at IS NULL`,
-        [insertedApplication.rows[0].id]
-      );
-    } catch (emailError) {
-      console.error("Application-received email error:", emailError);
-    }
+    // Return the application response without waiting for the email provider.
+    // Email delivery continues in the background and is logged if it fails.
+    const savedApplication = insertedApplication.rows[0];
+    void sendApplicationReceivedEmail(savedApplication)
+      .then(() =>
+        pool.query(
+          `UPDATE applications
+           SET application_received_email_sent_at = NOW()
+           WHERE id = $1
+             AND application_received_email_sent_at IS NULL`,
+          [savedApplication.id]
+        )
+      )
+      .catch((emailError) => {
+        console.error("Application-received email error:", emailError);
+      });
 
     res.status(201).json({
       message: "Your recruitment application has been received.",
