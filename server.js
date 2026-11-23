@@ -271,6 +271,8 @@ async function initializeDatabase() {
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS phone TEXT NOT NULL DEFAULT '';
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS application_received_email_sent_at TIMESTAMPTZ;
     ALTER TABLE applications ADD COLUMN IF NOT EXISTS under_review_email_sent_at TIMESTAMPTZ;
+    ALTER TABLE applications ADD COLUMN IF NOT EXISTS approved_email_sent_at TIMESTAMPTZ;
+    ALTER TABLE applications ADD COLUMN IF NOT EXISTS rejected_email_sent_at TIMESTAMPTZ;
 
     CREATE TABLE IF NOT EXISTS employer_invoices (
       id BIGSERIAL PRIMARY KEY,
@@ -510,11 +512,12 @@ console.log("APPLICATION VALIDATION:", {
       "CA-" +
       crypto.randomBytes(6).toString("hex").toUpperCase();
 
-    await pool.query(
+    const insertedApplication = await pool.query(
       `INSERT INTO applications
        (reference, full_name, email, phone, country, occupation,
         experience, education, cv_status, job_id, message)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+       RETURNING *`,
       [
         reference,
         fullName,
@@ -529,6 +532,19 @@ console.log("APPLICATION VALIDATION:", {
         message
       ]
     );
+
+    try {
+      await sendApplicationReceivedEmail(insertedApplication.rows[0]);
+      await pool.query(
+        `UPDATE applications
+         SET application_received_email_sent_at = NOW()
+         WHERE id = $1
+           AND application_received_email_sent_at IS NULL`,
+        [insertedApplication.rows[0].id]
+      );
+    } catch (emailError) {
+      console.error("Application-received email error:", emailError);
+    }
 
     res.status(201).json({
       message: "Your recruitment application has been received.",
@@ -841,6 +857,58 @@ async function sendUnderReviewEmail(application) {
   });
          }
 
+async function sendApprovedEmail(application) {
+  const name = escapeHtml(application.full_name);
+  const reference = escapeHtml(application.reference);
+
+  return sendApplicantEmail({
+    to: application.email,
+    subject: "An update on your recruitment application",
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#253247">
+        <h2>Application Status Update</h2>
+        <p>Dear ${name},</p>
+        <p>Your recruitment application status has been updated to <strong>Approved</strong> by the recruitment team.</p>
+        <p>Application reference: <strong>${reference}</strong></p>
+        <p>This status update is not a job offer, employment contract, work permit, or visa approval. Any next steps will be communicated separately.</p>
+        <p>Kind regards,<br>Recruitment Team</p>
+      </div>
+    `,
+    text:
+      `Dear ${application.full_name},\n` +
+      "Your recruitment application status has been updated to Approved.\n" +
+      `Reference: ${application.reference}\n` +
+      "This is not a job offer, employment contract, work permit, or visa approval. Any next steps will be communicated separately.\n" +
+      "Kind regards,\nRecruitment Team"
+  });
+}
+
+async function sendRejectedEmail(application) {
+  const name = escapeHtml(application.full_name);
+  const reference = escapeHtml(application.reference);
+
+  return sendApplicantEmail({
+    to: application.email,
+    subject: "An update on your recruitment application",
+    html: `
+      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#253247">
+        <h2>Application Status Update</h2>
+        <p>Dear ${name},</p>
+        <p>Thank you for your interest. After review, your recruitment application status has been updated to <strong>Rejected</strong>.</p>
+        <p>Application reference: <strong>${reference}</strong></p>
+        <p>This decision relates to this recruitment application only. It is not an immigration or visa decision.</p>
+        <p>Kind regards,<br>Recruitment Team</p>
+      </div>
+    `,
+    text:
+      `Dear ${application.full_name},\n` +
+      "Thank you for your interest. After review, your recruitment application status has been updated to Rejected.\n" +
+      `Reference: ${application.reference}\n` +
+      "This decision relates to this recruitment application only. It is not an immigration or visa decision.\n" +
+      "Kind regards,\nRecruitment Team"
+  });
+}
+
 // =====================================
 // ADMIN: UPDATE APPLICATION STATUS
 // =====================================
@@ -889,25 +957,35 @@ app.patch(
 
       const application = result.rows[0];
 
-      if (
-        status === "Under review" &&
-        !application.under_review_email_sent_at
-      ) {
-        try {
-          await sendUnderReviewEmail(application);
+      const emailEvents = {
+        "Under review": {
+          sentAt: "under_review_email_sent_at",
+          send: sendUnderReviewEmail
+        },
+        "Approved": {
+          sentAt: "approved_email_sent_at",
+          send: sendApprovedEmail
+        },
+        "Rejected": {
+          sentAt: "rejected_email_sent_at",
+          send: sendRejectedEmail
+        }
+      };
 
+      const emailEvent = emailEvents[status];
+
+      if (emailEvent && !application[emailEvent.sentAt]) {
+        try {
+          await emailEvent.send(application);
           await pool.query(
             `UPDATE applications
-             SET under_review_email_sent_at = NOW()
+             SET ${emailEvent.sentAt} = NOW()
              WHERE id = $1
-               AND under_review_email_sent_at IS NULL`,
+               AND ${emailEvent.sentAt} IS NULL`,
             [id]
           );
         } catch (emailError) {
-          console.error(
-            "Under-review email error:",
-            emailError
-          );
+          console.error(`${status} application email error:`, emailError);
         }
       }
 
