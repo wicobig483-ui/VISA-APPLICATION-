@@ -1076,6 +1076,51 @@ app.post(
 );
 
 // =====================================
+// ADMIN: UPDATE VACANCY VISIBILITY
+// =====================================
+
+app.patch(
+  "/api/admin/jobs/:id/status",
+  adminOnly,
+  async (req, res) => {
+    try {
+      const id = Number(req.params.id);
+
+      if (!Number.isSafeInteger(id) || id < 1) {
+        return res.status(400).json({ error: "Invalid vacancy ID." });
+      }
+
+      if (typeof req.body.active !== "boolean") {
+        return res.status(400).json({
+          error: "A true or false visibility value is required."
+        });
+      }
+
+      const result = await pool.query(
+        "UPDATE jobs SET active = $1 WHERE id = $2 RETURNING id, title, active",
+        [req.body.active, id]
+      );
+
+      if (!result.rowCount) {
+        return res.status(404).json({ error: "Vacancy not found." });
+      }
+
+      res.json({
+        message: result.rows[0].active
+          ? "Vacancy published successfully."
+          : "Vacancy hidden successfully.",
+        job: result.rows[0]
+      });
+    } catch (err) {
+      console.error("Update vacancy visibility error:", err);
+      res.status(500).json({
+        error: "Unable to change vacancy visibility."
+      });
+    }
+  }
+);
+
+// =====================================
 // ADMIN: UPDATE VACANCY
 // =====================================
 
