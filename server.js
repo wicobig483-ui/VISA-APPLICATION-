@@ -12,7 +12,6 @@ const multer = require("multer");
 const { v2: cloudinary } = require("cloudinary");
 const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const path = require("path");
-const nodemailer = require("nodemailer");
 
 const app = express();
 
@@ -726,44 +725,54 @@ app.get("/api/admin/applications", adminOnly, async (_req, res) => {
 });
 
 // =====================================
-// EMAIL: BREVO SMTP HELPER
+// EMAIL: BREVO HTTPS API HELPER
 // =====================================
 
 async function sendApplicantEmail({ to, subject, html, text }) {
-  const smtpLogin = process.env.EMAIL_USER;
-  const smtpKey = process.env.EMAIL_APP_PASSWORD;
+  const apiKey = process.env.BREVO_API_KEY;
   const fromAddress = process.env.EMAIL_FROM;
 
-  if (!smtpLogin || !smtpKey || !fromAddress) {
+  if (!apiKey || !fromAddress) {
     throw new Error(
-      "Email is not configured. Add EMAIL_USER, EMAIL_APP_PASSWORD, and EMAIL_FROM in Render."
+      "Email is not configured. Add BREVO_API_KEY and EMAIL_FROM in Render."
     );
   }
 
-  const transporter = nodemailer.createTransport({
-    host: "smtp-relay.brevo.com",
-    port: 587,
-    secure: false,
-    auth: {
-      user: smtpLogin,
-      pass: smtpKey.trim()
-    }
+  const senderMatch = fromAddress.match(/^(.*?)\s*<([^<>]+)>$/);
+  const sender = senderMatch
+    ? { name: senderMatch[1].trim(), email: senderMatch[2].trim() }
+    : { email: fromAddress.trim() };
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      accept: "application/json",
+      "api-key": apiKey.trim(),
+      "content-type": "application/json"
+    },
+    body: JSON.stringify({
+      sender,
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+      textContent: text
+    }),
+    signal: AbortSignal.timeout(20000)
   });
 
-  const result = await transporter.sendMail({
-    from: fromAddress,
-    to,
-    subject,
-    html,
-    text
-  });
+  const responseBody = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    const detail = responseBody.message || responseBody.code || `HTTP ${response.status}`;
+    throw new Error(`Brevo API rejected the email: ${detail}`);
+  }
 
   console.log(
-    "Applicant email accepted by Brevo SMTP:",
-    result.messageId || "Message ID unavailable"
+    "Applicant email accepted by Brevo API:",
+    responseBody.messageId || "Message ID unavailable"
   );
 
-  return result;
+  return responseBody;
 }
 
 // =====================================
