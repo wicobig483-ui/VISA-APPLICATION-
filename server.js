@@ -722,31 +722,32 @@ app.get("/api/admin/applications", adminOnly, async (_req, res) => {
 });
 
 // =====================================
-// EMAIL: GMAIL SMTP HELPER
+// EMAIL: BREVO SMTP HELPER
 // =====================================
 
 async function sendApplicantEmail({ to, subject, html, text }) {
-  const emailUser = process.env.EMAIL_USER;
-  const appPassword = process.env.EMAIL_APP_PASSWORD;
+  const smtpLogin = process.env.EMAIL_USER;
+  const smtpKey = process.env.EMAIL_APP_PASSWORD;
+  const fromAddress = process.env.EMAIL_FROM;
 
-  if (!emailUser || !appPassword) {
+  if (!smtpLogin || !smtpKey || !fromAddress) {
     throw new Error(
-      "Email is not configured. Add EMAIL_USER and EMAIL_APP_PASSWORD in Render."
+      "Email is not configured. Add EMAIL_USER, EMAIL_APP_PASSWORD, and EMAIL_FROM in Render."
     );
   }
 
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 465,
-    secure: true,
+    host: "smtp-relay.brevo.com",
+    port: 587,
+    secure: false,
     auth: {
-      user: emailUser,
-      pass: appPassword.replace(/\\s+/g, "")
+      user: smtpLogin,
+      pass: smtpKey.trim()
     }
   });
 
   const result = await transporter.sendMail({
-    from: process.env.EMAIL_FROM || emailUser,
+    from: fromAddress,
     to,
     subject,
     html,
@@ -754,7 +755,7 @@ async function sendApplicantEmail({ to, subject, html, text }) {
   });
 
   console.log(
-    "Applicant email accepted by Gmail SMTP:",
+    "Applicant email accepted by Brevo SMTP:",
     result.messageId || "Message ID unavailable"
   );
 
@@ -762,6 +763,7 @@ async function sendApplicantEmail({ to, subject, html, text }) {
 }
 
 // =====================================
+
 // EMAIL: APPLICATION RECEIVED
 // =====================================
 
