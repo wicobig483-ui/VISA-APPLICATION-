@@ -1695,9 +1695,15 @@ app.patch("/api/admin/invoices/:id/paid", adminOnly, async (req, res) => {
       });
     }
 
+    // only_confirmed=true on the TRONGrid query filters this list to
+    // confirmed chain transactions. TRC20 event records do not reliably
+    // include a per-transfer "success" boolean, so do not require one.
+    const transferTimestamp = Number(matchingTransfer.block_timestamp);
     const validTransfer =
       matchingTransfer.type === "Transfer" &&
-      matchingTransfer.success === true &&
+      Number.isFinite(transferTimestamp) &&
+      transferTimestamp >= minTimestamp &&
+      transferTimestamp <= Date.now() &&
       matchingTransfer.to === walletAddress &&
       matchingTransfer.token_info &&
       matchingTransfer.token_info.address === TRON_USDT_CONTRACT &&
