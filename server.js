@@ -1092,6 +1092,40 @@ app.patch(
         });
       }
 
+      // Allow the Publish/Hide button to update only the visibility flag.
+      // This preserves the vacancy's existing title, description, media and requirements.
+      const hasActive = Object.prototype.hasOwnProperty.call(req.body, "active");
+      const hasVacancyFields = [
+        "title", "location", "description", "requirements",
+        "employmentType", "image_url", "image_public_id",
+        "video_url", "video_public_id"
+      ].some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
+
+      if (hasActive && !hasVacancyFields) {
+        const active =
+          req.body.active === true ||
+          req.body.active === "true" ||
+          req.body.active === "on" ||
+          req.body.active === 1 ||
+          req.body.active === "1";
+
+        const result = await pool.query(
+          "UPDATE jobs SET active = $1 WHERE id = $2 RETURNING *",
+          [active, id]
+        );
+
+        if (!result.rowCount) {
+          return res.status(404).json({
+            error: "Vacancy not found."
+          });
+        }
+
+        return res.json({
+          message: "Vacancy visibility updated successfully.",
+          job: result.rows[0]
+        });
+      }
+
       const title = clean(req.body.title, 150);
       const location = clean(req.body.location, 150);
       const description = clean(req.body.description, 5000);
