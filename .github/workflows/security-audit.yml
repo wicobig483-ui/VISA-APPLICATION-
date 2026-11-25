@@ -20,5 +20,9 @@ jobs:
           node-version: '22'
       - name: Install dependencies without running package scripts
         run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Check server JavaScript syntax
+        run: node --check server.js
+      - name: Verify installed dependencies
+        run: npm ls --depth=0
       - name: Run npm security audit
         run: npm audit --audit-level=high
