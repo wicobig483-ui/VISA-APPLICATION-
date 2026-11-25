@@ -1,0 +1,24 @@
+name: Dependency Security Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: Audit npm dependencies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies without running package scripts
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Run npm security audit
+        run: npm audit --audit-level=high
