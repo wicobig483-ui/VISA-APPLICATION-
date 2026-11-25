@@ -10,7 +10,6 @@ const rateLimit = require("express-rate-limit");
 const crypto = require("crypto");
 const multer = require("multer");
 const { v2: cloudinary } = require("cloudinary");
-const { CloudinaryStorage } = require("multer-storage-cloudinary");
 const path = require("path");
 
 const app = express();
@@ -88,13 +87,29 @@ function optimizedVideoUrl(publicId, fallbackUrl) {
 // CLOUDINARY UPLOAD CONFIGURATION
 // =====================================
 
-const imageStorage = new CloudinaryStorage({
-  cloudinary,
-  params: async () => ({
-    folder: "canada-recruitment",
-    resource_type: "image",
-    allowed_formats: ["jpg", "jpeg", "png", "webp"]
-  })
+function createCloudinaryStorage({ folder, resourceType, allowedFormats }) {
+  return {
+    _handleFile(_req, file, cb) {
+      const uploadStream = cloudinary.uploader.upload_stream({
+        folder,
+        resource_type: resourceType,
+        allowed_formats: allowedFormats
+      }, (err, result) => {
+        if (err) return cb(err);
+        cb(null, { path: result.secure_url, filename: result.public_id, size: result.bytes });
+      });
+      file.stream.pipe(uploadStream);
+    },
+    _removeFile(_req, file, cb) {
+      cloudinary.uploader.destroy(file.filename, { resource_type: resourceType }, err => cb(err || null));
+    }
+  };
+}
+
+const imageStorage = createCloudinaryStorage({
+  folder: "canada-recruitment",
+  resourceType: "image",
+  allowedFormats: ["jpg", "jpeg", "png", "webp"]
 });
 
 const upload = multer({
@@ -119,13 +134,10 @@ const upload = multer({
   }
 });
 
-const videoStorage = new CloudinaryStorage({
-  cloudinary,
-  params: async () => ({
-    folder: "canada-recruitment/videos",
-    resource_type: "video",
-    allowed_formats: ["mp4", "mov", "webm"]
-  })
+const videoStorage = createCloudinaryStorage({
+  folder: "canada-recruitment/videos",
+  resourceType: "video",
+  allowedFormats: ["mp4", "mov", "webm"]
 });
 
 const videoUpload = multer({
