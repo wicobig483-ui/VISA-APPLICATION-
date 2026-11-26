@@ -649,8 +649,8 @@ function renderJob(job) {
 
   details.appendChild(createElement(
     "p", "job-support-status",
-    "LMIA: " + (job.lmia_status || "Not verified") +
-    " | Work-permit support: " + (job.work_permit_support || "Not verified")
+    "Employer-reported LMIA: " + (job.lmia_status || "Not verified") +
+    " | Employer-reported work-permit support: " + (job.work_permit_support || "Not verified")
   ));
   const applyLink = createElement("a", "btn", "Apply for this vacancy");
   applyLink.href = "#apply";
