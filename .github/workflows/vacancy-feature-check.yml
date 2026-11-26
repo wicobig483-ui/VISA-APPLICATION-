@@ -34,11 +34,6 @@ jobs:
           node --check scripts/test-vacancy-migration.js
 
       - name: Run isolated PostgreSQL migration tests
-        if: ${{ secrets.TEST_DATABASE_URL != '' }}
         env:
           TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
         run: npm run test:db
-
-      - name: Explain skipped database tests
-        if: ${{ secrets.TEST_DATABASE_URL == '' }}
-        run: echo "Database tests skipped because TEST_DATABASE_URL is not configured."
