@@ -531,6 +531,9 @@ function editJob(job) {
   form.elements.location.value = job.location || "";
   form.elements.employmentType.value =
     job.employment_type || "Full-time";
+  form.elements.salary.value = job.salary || "";
+  form.elements.sponsorshipStatus.value =
+    job.sponsorship_status || "Not verified";
 
   form.elements.description.value =
     job.description || "";
@@ -644,6 +647,8 @@ if (jobForm) {
         title: formData.title,
         location: formData.location,
         employmentType: formData.employmentType,
+        salary: formData.salary,
+        sponsorshipStatus: formData.sponsorshipStatus,
         description: formData.description,
         requirements: formData.requirements
       };
