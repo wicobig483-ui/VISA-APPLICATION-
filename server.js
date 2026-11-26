@@ -381,7 +381,9 @@ app.get("/api/jobs", async (_req, res) => {
     const result = await pool.query(`
       SELECT id, title, location, description, requirements,
              employment_type, image_url, image_public_id,
-             video_url, video_public_id, created_at
+             video_url, video_public_id, created_at,
+             salary_min, salary_max, salary_period, salary_currency,
+             salary_confirmed, lmia_status, work_permit_support
       FROM jobs
       WHERE active = TRUE
       ORDER BY created_at DESC
@@ -1042,24 +1044,54 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
       req.body.employmentType || "Full-time",
       80
     );
+    const salaryMin = req.body.salaryMin === "" || req.body.salaryMin == null
+      ? null : Number(req.body.salaryMin);
+    const salaryMax = req.body.salaryMax === "" || req.body.salaryMax == null
+      ? null : Number(req.body.salaryMax);
+    const salaryPeriod = clean(req.body.salaryPeriod, 20).toLowerCase();
+    const salaryConfirmed = req.body.salaryConfirmed === true;
+    const lmiaStatus = clean(req.body.lmiaStatus || "Not verified", 40);
+    const workPermitSupport = clean(req.body.workPermitSupport || "Not verified", 40);
+    const validPeriods = ["hourly", "weekly", "monthly", "annual"];
+    const validLmia = [
+      "Not verified", "LMIA required", "LMIA application in progress",
+      "LMIA approved", "LMIA not required", "Not applicable"
+    ];
+    const validWorkPermit = [
+      "Not verified", "Employer may support", "Employer support confirmed",
+      "No support offered", "Not applicable"
+    ];
 
     if (!title || !location || !description) {
       return res.status(400).json({
         error: "Title, location and description are required."
       });
     }
+    if (
+      !Number.isFinite(salaryMin) || salaryMin <= 0 ||
+      (salaryMax !== null && (!Number.isFinite(salaryMax) || salaryMax < salaryMin)) ||
+      !validPeriods.includes(salaryPeriod) ||
+      !salaryConfirmed
+    ) {
+      return res.status(400).json({
+        error: "Enter a valid starting salary, optional maximum salary, pay period, and confirm that the employer has verified the salary."
+      });
+    }
+    if (!validLmia.includes(lmiaStatus) || !validWorkPermit.includes(workPermitSupport)) {
+      return res.status(400).json({ error: "Select valid LMIA and work-permit support statuses." });
+    }
 
     const result = await pool.query(
       `INSERT INTO jobs
-       (title, location, description, requirements, employment_type)
-       VALUES ($1, $2, $3, $4, $5)
+       (title, location, description, requirements, employment_type,
+        salary_min, salary_max, salary_period, salary_currency, salary_confirmed,
+        lmia_status, work_permit_support)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'CAD', $9, $10, $11)
        RETURNING *`,
       [
-        title,
-        location,
-        description,
-        requirements,
-        employmentType
+        title, location, description, requirements, employmentType,
+        salaryMin, salaryMax, salaryPeriod, salaryConfirmed,
+        lmiaStatus, workPermitSupport
       ]
     );
 
@@ -1208,7 +1240,8 @@ app.patch(
       const hasVacancyFields = [
         "title", "location", "description", "requirements",
         "employmentType", "image_url", "image_public_id",
-        "video_url", "video_public_id"
+        "video_url", "video_public_id", "salaryMin", "salaryMax",
+        "salaryPeriod", "salaryConfirmed", "lmiaStatus", "workPermitSupport"
       ].some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
 
       if (hasActive && !hasVacancyFields) {
@@ -1257,6 +1290,46 @@ app.patch(
       const imagePublicId = clean(req.body.image_public_id, 300);
       const videoUrl = clean(req.body.video_url, 2000);
       const videoPublicId = clean(req.body.video_public_id, 300);
+      const hasSalaryMin = Object.prototype.hasOwnProperty.call(req.body, "salaryMin");
+      const hasSalaryMax = Object.prototype.hasOwnProperty.call(req.body, "salaryMax");
+      const hasSalaryPeriod = Object.prototype.hasOwnProperty.call(req.body, "salaryPeriod");
+      const hasSalaryConfirmed = Object.prototype.hasOwnProperty.call(req.body, "salaryConfirmed");
+      const hasLmiaStatus = Object.prototype.hasOwnProperty.call(req.body, "lmiaStatus");
+      const hasWorkPermitSupport = Object.prototype.hasOwnProperty.call(req.body, "workPermitSupport");
+      const salaryMin = req.body.salaryMin === "" || req.body.salaryMin == null
+        ? null : Number(req.body.salaryMin);
+      const salaryMax = req.body.salaryMax === "" || req.body.salaryMax == null
+        ? null : Number(req.body.salaryMax);
+      const salaryPeriod = clean(req.body.salaryPeriod, 20).toLowerCase();
+      const salaryConfirmed = req.body.salaryConfirmed === true;
+      const lmiaStatus = clean(req.body.lmiaStatus || "Not verified", 40);
+      const workPermitSupport = clean(req.body.workPermitSupport || "Not verified", 40);
+      const validPeriods = ["hourly", "weekly", "monthly", "annual"];
+      const validLmia = [
+        "Not verified", "LMIA required", "LMIA application in progress",
+        "LMIA approved", "LMIA not required", "Not applicable"
+      ];
+      const validWorkPermit = [
+        "Not verified", "Employer may support", "Employer support confirmed",
+        "No support offered", "Not applicable"
+      ];
+
+      if (hasSalaryMin || hasSalaryMax || hasSalaryPeriod || hasSalaryConfirmed) {
+        if (
+          !Number.isFinite(salaryMin) || salaryMin <= 0 ||
+          (salaryMax !== null && (!Number.isFinite(salaryMax) || salaryMax < salaryMin)) ||
+          !validPeriods.includes(salaryPeriod) ||
+          !salaryConfirmed
+        ) {
+          return res.status(400).json({
+            error: "Enter a valid starting salary, optional maximum salary, pay period, and confirm that the employer has verified the salary."
+          });
+        }
+      }
+      if ((hasLmiaStatus && !validLmia.includes(lmiaStatus)) ||
+          (hasWorkPermitSupport && !validWorkPermit.includes(workPermitSupport))) {
+        return res.status(400).json({ error: "Select valid LMIA and work-permit support statuses." });
+      }
 
       if (!title || !location || !description) {
         return res.status(400).json({
@@ -1275,7 +1348,14 @@ app.patch(
              image_url = NULLIF($7, ''),
              image_public_id = NULLIF($8, ''),
              video_url = NULLIF($9, ''),
-             video_public_id = NULLIF($10, '')
+             video_public_id = NULLIF($10, ''),
+             salary_min = CASE WHEN $12 THEN $13::numeric ELSE salary_min END,
+             salary_max = CASE WHEN $14 THEN $15::numeric ELSE salary_max END,
+             salary_period = CASE WHEN $16 THEN NULLIF($17, '') ELSE salary_period END,
+             salary_currency = CASE WHEN $16 THEN 'CAD' ELSE salary_currency END,
+             salary_confirmed = CASE WHEN $18 THEN $19::boolean ELSE salary_confirmed END,
+             lmia_status = CASE WHEN $20 THEN $21 ELSE lmia_status END,
+             work_permit_support = CASE WHEN $22 THEN $23 ELSE work_permit_support END
          WHERE id = $11
          RETURNING *`,
         [
@@ -1289,7 +1369,13 @@ app.patch(
           imagePublicId,
           videoUrl,
           videoPublicId,
-          id
+          id,
+          hasSalaryMin, salaryMin,
+          hasSalaryMax, salaryMax,
+          hasSalaryPeriod, salaryPeriod,
+          hasSalaryConfirmed, salaryConfirmed,
+          hasLmiaStatus, lmiaStatus,
+          hasWorkPermitSupport, workPermitSupport
         ]
       );
 
