@@ -234,6 +234,8 @@ async function initializeDatabase() {
       description TEXT NOT NULL,
       requirements TEXT NOT NULL DEFAULT '',
       employment_type TEXT NOT NULL DEFAULT 'Full-time',
+      salary TEXT NOT NULL DEFAULT '',
+      sponsorship_status TEXT NOT NULL DEFAULT 'Not verified',
       image_url TEXT,
       image_public_id TEXT,
       video_url TEXT,
@@ -248,6 +250,8 @@ async function initializeDatabase() {
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS video_public_id TEXT;
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requirements TEXT NOT NULL DEFAULT '';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS employment_type TEXT NOT NULL DEFAULT 'Full-time';
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary TEXT NOT NULL DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS sponsorship_status TEXT NOT NULL DEFAULT 'Not verified';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
 
     CREATE TABLE IF NOT EXISTS applications (
@@ -1051,15 +1055,17 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO jobs
-       (title, location, description, requirements, employment_type)
-       VALUES ($1, $2, $3, $4, $5)
+       (title, location, description, requirements, employment_type, salary, sponsorship_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         title,
         location,
         description,
         requirements,
-        employmentType
+        employmentType,
+        clean(req.body.salary, 100),
+        clean(req.body.sponsorshipStatus || "Not verified", 80)
       ]
     );
 
@@ -1207,7 +1213,7 @@ app.patch(
       const hasActive = Object.prototype.hasOwnProperty.call(req.body, "active");
       const hasVacancyFields = [
         "title", "location", "description", "requirements",
-        "employmentType", "image_url", "image_public_id",
+        "employmentType", "salary", "sponsorshipStatus", "image_url", "image_public_id",
         "video_url", "video_public_id"
       ].some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
 
@@ -1245,6 +1251,8 @@ app.patch(
         req.body.employmentType || "Full-time",
         80
       );
+      const salary = clean(req.body.salary, 100);
+      const sponsorshipStatus = clean(req.body.sponsorshipStatus || "Not verified", 80);
 
       const active =
         req.body.active === true ||
@@ -1271,12 +1279,14 @@ app.patch(
              description = $3,
              requirements = $4,
              employment_type = $5,
-             active = $6,
-             image_url = NULLIF($7, ''),
-             image_public_id = NULLIF($8, ''),
-             video_url = NULLIF($9, ''),
-             video_public_id = NULLIF($10, '')
-         WHERE id = $11
+             salary = $6,
+             sponsorship_status = $7,
+             active = $8,
+             image_url = NULLIF($9, ''),
+             image_public_id = NULLIF($10, ''),
+             video_url = NULLIF($11, ''),
+             video_public_id = NULLIF($12, '')
+         WHERE id = $13
          RETURNING *`,
         [
           title,
@@ -1284,6 +1294,8 @@ app.patch(
           description,
           requirements,
           employmentType,
+          salary,
+          sponsorshipStatus,
           active,
           imageUrl,
           imagePublicId,
