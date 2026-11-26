@@ -391,6 +391,14 @@ async function loadJobs() {
         "Employment: " +
         (job.employment_type || "Not specified");
 
+      // PAY AND IMMIGRATION SUPPORT
+      const salary = document.createElement("p");
+      salary.textContent = "Pay: " + (job.salary || "Not provided");
+      const sponsorship = document.createElement("p");
+      sponsorship.textContent =
+        "LMIA / work-permit support: " +
+        (job.sponsorship_status || "Not verified");
+
       // STATUS
       const status = document.createElement("p");
 
@@ -502,6 +510,8 @@ async function loadJobs() {
         title,
         locationText,
         type,
+        salary,
+        sponsorship,
         status,
         media,
         editButton,
@@ -656,13 +666,13 @@ if (jobForm) {
       // ONLY SEND MEDIA FIELDS WHEN A NEW FILE IS SELECTED
       // This preserves existing media during editing.
       if (image) {
-        payload.imageUrl = image.url;
-        payload.imagePublicId = image.publicId;
+        payload.image_url = image.url;
+        payload.image_public_id = image.publicId;
       }
 
       if (video) {
-        payload.videoUrl = video.url;
-        payload.videoPublicId = video.publicId;
+        payload.video_url = video.url;
+        payload.video_public_id = video.publicId;
       }
 
       if (editingJobId !== null) {
