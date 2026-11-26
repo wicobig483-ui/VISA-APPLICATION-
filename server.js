@@ -1046,8 +1046,10 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
       req.body.employmentType || "Full-time",
       80
     );
+    const salary = clean(req.body.salary, 100);
+    const sponsorshipStatus = clean(req.body.sponsorshipStatus || "Not verified", 80);
 
-    if (!title || !location || !description) {
+    if (!title || !location || !description || !salary) {
       return res.status(400).json({
         error: "Title, location and description are required."
       });
@@ -1064,8 +1066,8 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
         description,
         requirements,
         employmentType,
-        clean(req.body.salary, 100),
-        clean(req.body.sponsorshipStatus || "Not verified", 80)
+        salary,
+        sponsorshipStatus
       ]
     );
 
