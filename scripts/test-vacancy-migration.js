@@ -11,7 +11,12 @@ async function main() {
     throw new Error("TEST_DATABASE_URL is required for database tests.");
   }
 
-  // Render PostgreSQL requires TLS for external connections. This applies only\n  // to the dedicated TEST_DATABASE_URL used by this isolated migration test.\n  const client = new Client({\n    connectionString,\n    ssl: { rejectUnauthorized: false }\n  });
+  // Render PostgreSQL requires TLS for external connections. This applies only
+  // to the dedicated TEST_DATABASE_URL used by this isolated migration test.
+  const client = new Client({
+    connectionString,
+    ssl: { rejectUnauthorized: false }
+  });
   const schema = "vacancy_test_" + crypto.randomBytes(6).toString("hex");
   let transactionStarted = false;
 
