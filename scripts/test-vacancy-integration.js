@@ -3,6 +3,8 @@
 const crypto = require("node:crypto");
 const { spawn } = require("node:child_process");
 const { Client } = require("pg");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const assert = require("node:assert/strict");
 
@@ -55,8 +57,6 @@ async function main() {
           created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
         )
       `);
-      const fs = require("node:fs");
-      const path = require("node:path");
       const migration = fs.readFileSync(
         path.join(__dirname, "..", "migrations", "20261126_add_vacancy_salary_support.sql"),
         "utf8"
