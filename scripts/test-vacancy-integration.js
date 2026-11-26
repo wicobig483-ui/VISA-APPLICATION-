@@ -238,7 +238,7 @@ async function main() {
       edited.body.job.lmia_status === "LMIA required" &&
       edited.body.job.work_permit_support === "Employer may support",
       "editing a vacancy saves updated salary and support statuses; response: " +
-        JSON.stringify({ status: edited.status, body: edited.body }));
+        JSON.stringify({ status: edited.status, body: edited.body, serverOutput }));
     check(edited.body.job.image_url === "https://example.test/test-image.jpg" &&
       edited.body.job.video_url === "https://example.test/test-video.mp4",
       "editing without new uploads preserves existing image and video metadata");
