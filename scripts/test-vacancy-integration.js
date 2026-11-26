@@ -230,10 +230,15 @@ async function main() {
         workPermitSupport: "Employer may support"
       })
     }, cookie);
-    check(edited.status === 200 &&
+    check(edited.status === 200 && edited.body.job &&
       Number(edited.body.job.salary_min) === 23 &&
-      edited.body.job.lmia_status === "LMIA required",
-      "editing a vacancy saves updated salary and support statuses");
+      Number(edited.body.job.salary_max) === 28 &&
+      edited.body.job.salary_period === "hourly" &&
+      edited.body.job.salary_confirmed === true &&
+      edited.body.job.lmia_status === "LMIA required" &&
+      edited.body.job.work_permit_support === "Employer may support",
+      "editing a vacancy saves updated salary and support statuses; response: " +
+        JSON.stringify({ status: edited.status, body: edited.body }));
     check(edited.body.job.image_url === "https://example.test/test-image.jpg" &&
       edited.body.job.video_url === "https://example.test/test-video.mp4",
       "editing without new uploads preserves existing image and video metadata");
