@@ -1240,7 +1240,8 @@ app.patch(
       const hasVacancyFields = [
         "title", "location", "description", "requirements",
         "employmentType", "image_url", "image_public_id",
-        "video_url", "video_public_id", "salaryMin", "salaryMax",
+        "video_url", "video_public_id", "imageUrl", "imagePublicId",
+        "videoUrl", "videoPublicId", "salaryMin", "salaryMax",
         "salaryPeriod", "salaryConfirmed", "lmiaStatus", "workPermitSupport"
       ].some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
 
@@ -1286,10 +1287,10 @@ app.patch(
         req.body.active === 1 ||
         req.body.active === "1";
 
-      const imageUrl = clean(req.body.image_url, 2000);
-      const imagePublicId = clean(req.body.image_public_id, 300);
-      const videoUrl = clean(req.body.video_url, 2000);
-      const videoPublicId = clean(req.body.video_public_id, 300);
+      const imageUrl = clean(req.body.image_url ?? req.body.imageUrl, 2000);
+      const imagePublicId = clean(req.body.image_public_id ?? req.body.imagePublicId, 300);
+      const videoUrl = clean(req.body.video_url ?? req.body.videoUrl, 2000);
+      const videoPublicId = clean(req.body.video_public_id ?? req.body.videoPublicId, 300);
       const hasSalaryMin = Object.prototype.hasOwnProperty.call(req.body, "salaryMin");
       const hasSalaryMax = Object.prototype.hasOwnProperty.call(req.body, "salaryMax");
       const hasSalaryPeriod = Object.prototype.hasOwnProperty.call(req.body, "salaryPeriod");
