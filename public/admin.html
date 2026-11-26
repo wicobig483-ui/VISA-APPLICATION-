@@ -102,6 +102,58 @@
           ></textarea>
         </label>
 
+        <div class="full panel">
+          <h3>Employer-confirmed salary (CAD)</h3>
+          <p class="muted">Enter the actual salary offered by the employer. Do not use an estimated market wage.</p>
+          <div class="form-grid">
+            <label>Starting salary (CAD) *
+              <input name="salaryMin" type="number" min="0.01" max="1000000" step="0.01" required>
+            </label>
+            <label>Maximum salary (CAD)
+              <input name="salaryMax" type="number" min="0.01" max="1000000" step="0.01">
+            </label>
+            <label>Pay period *
+              <select name="salaryPeriod" required>
+                <option value="">Choose pay period</option>
+                <option value="hourly">Per hour</option>
+                <option value="weekly">Per week</option>
+                <option value="monthly">Per month</option>
+                <option value="annual">Per year</option>
+              </select>
+            </label>
+            <label class="check">
+              <input name="salaryConfirmed" type="checkbox" required>
+              Employer has confirmed this salary
+            </label>
+          </div>
+        </div>
+
+        <div class="full panel">
+          <h3>LMIA and work-permit support</h3>
+          <p class="muted">Choose only a status supported by employer documentation. New vacancies default to Not verified.</p>
+          <div class="form-grid">
+            <label>LMIA status
+              <select name="lmiaStatus">
+                <option>Not verified</option>
+                <option>LMIA required</option>
+                <option>LMIA application in progress</option>
+                <option>LMIA approved</option>
+                <option>LMIA not required</option>
+                <option>Not applicable</option>
+              </select>
+            </label>
+            <label>Work-permit support
+              <select name="workPermitSupport">
+                <option>Not verified</option>
+                <option>Employer may support</option>
+                <option>Employer support confirmed</option>
+                <option>No support offered</option>
+                <option>Not applicable</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
         <!-- VACANCY PHOTO -->
         <div class="full">
 
@@ -346,7 +398,7 @@
 
 </main>
 
-<script src="/admin.js?v=20261123-status-fix-2"></script>
+<script src="/admin.js?v=20261126-salary-support-1"></script>
 
 </body>
 </html>
