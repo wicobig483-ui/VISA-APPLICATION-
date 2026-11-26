@@ -188,7 +188,7 @@ async function uploadImage(file) {
     body: formData
   });
 
-  return result.image;
+  return { url: result.url, publicId: result.public_id };
 }
 
 // UPLOAD VIDEO
@@ -203,7 +203,7 @@ async function uploadVideo(file) {
     body: formData
   });
 
-  return result.video;
+  return { url: result.url, publicId: result.public_id };
 }
 
 // CLEAR MEDIA PREVIEWS
@@ -240,6 +240,8 @@ function resetJobEditor() {
   if (form) {
     form.reset();
     form.elements.salaryConfirmed.required = true;
+    form.elements.salaryMin.required = true;
+    form.elements.salaryPeriod.required = true;
   }
 
   clearJobPreviews();
@@ -557,6 +559,8 @@ function editJob(job) {
   form.elements.salaryPeriod.value = job.salary_period || "";
   form.elements.salaryConfirmed.checked = job.salary_confirmed === true;
   form.elements.salaryConfirmed.required = job.salary_min != null;
+  form.elements.salaryMin.required = job.salary_min != null;
+  form.elements.salaryPeriod.required = job.salary_min != null;
   form.elements.lmiaStatus.value = job.lmia_status || "Not verified";
   form.elements.workPermitSupport.value = job.work_permit_support || "Not verified";
 
