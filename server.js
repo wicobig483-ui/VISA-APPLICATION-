@@ -1344,7 +1344,7 @@ app.patch(
              description = $3,
              requirements = $4,
              employment_type = $5,
-             active = $6,
+             active = CASE WHEN $24 THEN $25::boolean ELSE active END,
              image_url = NULLIF($7, ''),
              image_public_id = NULLIF($8, ''),
              video_url = NULLIF($9, ''),
@@ -1375,7 +1375,8 @@ app.patch(
           hasSalaryPeriod, salaryPeriod,
           hasSalaryConfirmed, salaryConfirmed,
           hasLmiaStatus, lmiaStatus,
-          hasWorkPermitSupport, workPermitSupport
+          hasWorkPermitSupport, workPermitSupport,
+          hasActive, active
         ]
       );
 
