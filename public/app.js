@@ -639,7 +639,19 @@ function renderJob(job) {
     requirements.appendChild(document.createTextNode(job.requirements));
     details.appendChild(requirements);
   }
-  if (job.salary) details.appendChild(createElement("p", "job-salary", "Salary: " + job.salary));
+  const salaryText = job.salary_min != null
+    ? "CAD " + Number(job.salary_min).toLocaleString("en-CA") +
+      (job.salary_max != null ? "–" + Number(job.salary_max).toLocaleString("en-CA") : "+") +
+      " per " + (job.salary_period || "period not specified") +
+      (job.salary_confirmed ? " · Employer confirmed" : " · Not confirmed")
+    : "Salary not provided";
+  details.appendChild(createElement("p", "job-salary", "Salary: " + salaryText));
+
+  details.appendChild(createElement(
+    "p", "job-support-status",
+    "Employer-reported LMIA: " + (job.lmia_status || "Not verified") +
+    " | Employer-reported work-permit support: " + (job.work_permit_support || "Not verified")
+  ));
   const applyLink = createElement("a", "btn", "Apply for this vacancy");
   applyLink.href = "#apply";
   applyLink.addEventListener("click", () => {

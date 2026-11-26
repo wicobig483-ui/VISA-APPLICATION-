@@ -188,7 +188,7 @@ async function uploadImage(file) {
     body: formData
   });
 
-  return result.image;
+  return { url: result.url, publicId: result.public_id };
 }
 
 // UPLOAD VIDEO
@@ -203,7 +203,7 @@ async function uploadVideo(file) {
     body: formData
   });
 
-  return result.video;
+  return { url: result.url, publicId: result.public_id };
 }
 
 // CLEAR MEDIA PREVIEWS
@@ -239,6 +239,9 @@ function resetJobEditor() {
 
   if (form) {
     form.reset();
+    form.elements.salaryConfirmed.required = true;
+    form.elements.salaryMin.required = true;
+    form.elements.salaryPeriod.required = true;
   }
 
   clearJobPreviews();
@@ -391,6 +394,18 @@ async function loadJobs() {
         "Employment: " +
         (job.employment_type || "Not specified");
 
+      // EMPLOYER-CONFIRMED SALARY AND IMMIGRATION SUPPORT
+      const salary = document.createElement("p");
+      salary.textContent = job.salary_min != null
+        ? "Salary: CAD " + Number(job.salary_min).toLocaleString("en-CA") +
+          (job.salary_max != null ? "–" + Number(job.salary_max).toLocaleString("en-CA") : "+") +
+          " per " + (job.salary_period || "period not specified") +
+          (job.salary_confirmed ? " (employer confirmed)" : " (not confirmed)")
+        : "Salary: Not provided";
+      const support = document.createElement("p");
+      support.textContent = "Employer-reported LMIA: " + (job.lmia_status || "Not verified") +
+        " | Employer-reported work-permit support: " + (job.work_permit_support || "Not verified");
+
       // STATUS
       const status = document.createElement("p");
 
@@ -502,6 +517,8 @@ async function loadJobs() {
         title,
         locationText,
         type,
+        salary,
+        support,
         status,
         media,
         editButton,
@@ -537,6 +554,15 @@ function editJob(job) {
 
   form.elements.requirements.value =
     job.requirements || "";
+  form.elements.salaryMin.value = job.salary_min ?? "";
+  form.elements.salaryMax.value = job.salary_max ?? "";
+  form.elements.salaryPeriod.value = job.salary_period || "";
+  form.elements.salaryConfirmed.checked = job.salary_confirmed === true;
+  form.elements.salaryConfirmed.required = job.salary_min != null;
+  form.elements.salaryMin.required = job.salary_min != null;
+  form.elements.salaryPeriod.required = job.salary_min != null;
+  form.elements.lmiaStatus.value = job.lmia_status || "Not verified";
+  form.elements.workPermitSupport.value = job.work_permit_support || "Not verified";
 
   // SHOW EXISTING PHOTO
   if (job.image_url && $("#jobPreview")) {
@@ -645,8 +671,23 @@ if (jobForm) {
         location: formData.location,
         employmentType: formData.employmentType,
         description: formData.description,
-        requirements: formData.requirements
+        requirements: formData.requirements,
+        lmiaStatus: formData.lmiaStatus || "Not verified",
+        workPermitSupport: formData.workPermitSupport || "Not verified"
       };
+
+      // New vacancies always require a confirmed salary. Legacy vacancies
+      // without a saved wage may be edited without inventing one.
+      const hasSalaryInput = Boolean(
+        formData.salaryMin || formData.salaryMax || formData.salaryPeriod ||
+        jobForm.elements.salaryConfirmed.checked
+      );
+      if (editingJobId === null || hasSalaryInput) {
+        payload.salaryMin = formData.salaryMin;
+        payload.salaryMax = formData.salaryMax;
+        payload.salaryPeriod = formData.salaryPeriod;
+        payload.salaryConfirmed = jobForm.elements.salaryConfirmed.checked;
+      }
 
       // ONLY SEND MEDIA FIELDS WHEN A NEW FILE IS SELECTED
       // This preserves existing media during editing.
