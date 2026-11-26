@@ -384,7 +384,8 @@ app.get("/api/jobs", async (_req, res) => {
   try {
     const result = await pool.query(`
       SELECT id, title, location, description, requirements,
-             employment_type, image_url, image_public_id,
+             employment_type, salary, sponsorship_status,
+             image_url, image_public_id,
              video_url, video_public_id, created_at
       FROM jobs
       WHERE active = TRUE
@@ -1281,13 +1282,13 @@ app.patch(
              description = $3,
              requirements = $4,
              employment_type = $5,
-             salary = $6,
-             sponsorship_status = $7,
+             salary = CASE WHEN $6 = '' THEN salary ELSE $6 END,
+             sponsorship_status = COALESCE(NULLIF($7, ''), 'Not verified'),
              active = $8,
-             image_url = NULLIF($9, ''),
-             image_public_id = NULLIF($10, ''),
-             video_url = NULLIF($11, ''),
-             video_public_id = NULLIF($12, '')
+             image_url = COALESCE(NULLIF($9, ''), image_url),
+             image_public_id = COALESCE(NULLIF($10, ''), image_public_id),
+             video_url = COALESCE(NULLIF($11, ''), video_url),
+             video_public_id = COALESCE(NULLIF($12, ''), video_public_id)
          WHERE id = $13
          RETURNING *`,
         [
