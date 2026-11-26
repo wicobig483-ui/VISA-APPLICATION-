@@ -6,7 +6,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test:db": "node scripts/test-vacancy-migration.js"
+    "test:db": "node scripts/test-vacancy-migration.js",
+    "test:integration": "node scripts/test-vacancy-integration.js"
   },
   "engines": {
     "node": ">=20"
