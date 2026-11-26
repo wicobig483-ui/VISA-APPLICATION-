@@ -390,6 +390,11 @@ function escapeHtml(value) {
 // =====================================
 
 app.get("/api/jobs", async (_req, res) => {
+  // Vacancy salary and support details should always reflect the latest
+  // employer-saved values rather than a cached public API response.
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
   try {
     const result = await pool.query(`
       SELECT id, title, location, description, requirements,
