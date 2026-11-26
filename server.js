@@ -1294,6 +1294,10 @@ app.patch(
         req.body.active === 1 ||
         req.body.active === "1";
 
+      const hasImage = ["image_url", "imageUrl", "image_public_id", "imagePublicId"]
+        .some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
+      const hasVideo = ["video_url", "videoUrl", "video_public_id", "videoPublicId"]
+        .some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
       const imageUrl = clean(req.body.image_url ?? req.body.imageUrl, 2000);
       const imagePublicId = clean(req.body.image_public_id ?? req.body.imagePublicId, 300);
       const videoUrl = clean(req.body.video_url ?? req.body.videoUrl, 2000);
@@ -1353,10 +1357,10 @@ app.patch(
              requirements = $4,
              employment_type = $5,
              active = CASE WHEN $24 THEN $25::boolean ELSE active END,
-             image_url = NULLIF($7, ''),
-             image_public_id = NULLIF($8, ''),
-             video_url = NULLIF($9, ''),
-             video_public_id = NULLIF($10, ''),
+             image_url = CASE WHEN $26 THEN NULLIF($7, '') ELSE image_url END,
+             image_public_id = CASE WHEN $26 THEN NULLIF($8, '') ELSE image_public_id END,
+             video_url = CASE WHEN $27 THEN NULLIF($9, '') ELSE video_url END,
+             video_public_id = CASE WHEN $27 THEN NULLIF($10, '') ELSE video_public_id END,
              salary_min = CASE WHEN $12 THEN $13::numeric ELSE salary_min END,
              salary_max = CASE WHEN $14 THEN $15::numeric ELSE salary_max END,
              salary_period = CASE WHEN $16 THEN NULLIF($17, '') ELSE salary_period END,
@@ -1384,7 +1388,8 @@ app.patch(
           hasSalaryConfirmed, salaryConfirmed,
           hasLmiaStatus, lmiaStatus,
           hasWorkPermitSupport, workPermitSupport,
-          hasActive, active
+          hasActive, active,
+          hasImage, hasVideo
         ]
       );
 
