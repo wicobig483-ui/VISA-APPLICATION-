@@ -639,7 +639,16 @@ function renderJob(job) {
     requirements.appendChild(document.createTextNode(job.requirements));
     details.appendChild(requirements);
   }
-  if (job.salary) details.appendChild(createElement("p", "job-salary", "Salary: " + job.salary));
+  const salaryText = job.salary
+    ? "Pay: " + job.salary
+    : "Pay: Not provided — confirm the wage with the employer before applying.";
+  details.appendChild(createElement("p", "job-salary", salaryText));
+
+  const sponsorshipText = job.sponsorship_status || "Not verified";
+  details.appendChild(
+    createElement("p", "job-sponsorship", "LMIA / work-permit support: " + sponsorshipText)
+  );
+
   const applyLink = createElement("a", "btn", "Apply for this vacancy");
   applyLink.href = "#apply";
   applyLink.addEventListener("click", () => {
