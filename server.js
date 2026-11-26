@@ -234,6 +234,8 @@ async function initializeDatabase() {
       description TEXT NOT NULL,
       requirements TEXT NOT NULL DEFAULT '',
       employment_type TEXT NOT NULL DEFAULT 'Full-time',
+      salary TEXT NOT NULL DEFAULT '',
+      sponsorship_status TEXT NOT NULL DEFAULT 'Not verified',
       image_url TEXT,
       image_public_id TEXT,
       video_url TEXT,
@@ -248,6 +250,8 @@ async function initializeDatabase() {
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS video_public_id TEXT;
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS requirements TEXT NOT NULL DEFAULT '';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS employment_type TEXT NOT NULL DEFAULT 'Full-time';
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS salary TEXT NOT NULL DEFAULT '';
+    ALTER TABLE jobs ADD COLUMN IF NOT EXISTS sponsorship_status TEXT NOT NULL DEFAULT 'Not verified';
     ALTER TABLE jobs ADD COLUMN IF NOT EXISTS active BOOLEAN NOT NULL DEFAULT TRUE;
 
     CREATE TABLE IF NOT EXISTS applications (
@@ -380,7 +384,8 @@ app.get("/api/jobs", async (_req, res) => {
   try {
     const result = await pool.query(`
       SELECT id, title, location, description, requirements,
-             employment_type, image_url, image_public_id,
+             employment_type, salary, sponsorship_status,
+             image_url, image_public_id,
              video_url, video_public_id, created_at
       FROM jobs
       WHERE active = TRUE
@@ -1042,24 +1047,28 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
       req.body.employmentType || "Full-time",
       80
     );
+    const salary = clean(req.body.salary, 100);
+    const sponsorshipStatus = clean(req.body.sponsorshipStatus || "Not verified", 80);
 
-    if (!title || !location || !description) {
+    if (!title || !location || !description || !salary) {
       return res.status(400).json({
-        error: "Title, location and description are required."
+        error: "Title, location, description and employer-confirmed salary are required."
       });
     }
 
     const result = await pool.query(
       `INSERT INTO jobs
-       (title, location, description, requirements, employment_type)
-       VALUES ($1, $2, $3, $4, $5)
+       (title, location, description, requirements, employment_type, salary, sponsorship_status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         title,
         location,
         description,
         requirements,
-        employmentType
+        employmentType,
+        salary,
+        sponsorshipStatus
       ]
     );
 
@@ -1207,7 +1216,7 @@ app.patch(
       const hasActive = Object.prototype.hasOwnProperty.call(req.body, "active");
       const hasVacancyFields = [
         "title", "location", "description", "requirements",
-        "employmentType", "image_url", "image_public_id",
+        "employmentType", "salary", "sponsorshipStatus", "image_url", "image_public_id",
         "video_url", "video_public_id"
       ].some((field) => Object.prototype.hasOwnProperty.call(req.body, field));
 
@@ -1245,6 +1254,8 @@ app.patch(
         req.body.employmentType || "Full-time",
         80
       );
+      const salary = clean(req.body.salary, 100);
+      const sponsorshipStatus = clean(req.body.sponsorshipStatus || "Not verified", 80);
 
       const active =
         req.body.active === true ||
@@ -1271,12 +1282,14 @@ app.patch(
              description = $3,
              requirements = $4,
              employment_type = $5,
-             active = $6,
-             image_url = NULLIF($7, ''),
-             image_public_id = NULLIF($8, ''),
-             video_url = NULLIF($9, ''),
-             video_public_id = NULLIF($10, '')
-         WHERE id = $11
+             salary = CASE WHEN $6 = '' THEN salary ELSE $6 END,
+             sponsorship_status = COALESCE(NULLIF($7, ''), 'Not verified'),
+             active = $8,
+             image_url = COALESCE(NULLIF($9, ''), image_url),
+             image_public_id = COALESCE(NULLIF($10, ''), image_public_id),
+             video_url = COALESCE(NULLIF($11, ''), video_url),
+             video_public_id = COALESCE(NULLIF($12, ''), video_public_id)
+         WHERE id = $13
          RETURNING *`,
         [
           title,
@@ -1284,6 +1297,8 @@ app.patch(
           description,
           requirements,
           employmentType,
+          salary,
+          sponsorshipStatus,
           active,
           imageUrl,
           imagePublicId,
