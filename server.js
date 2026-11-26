@@ -1370,6 +1370,7 @@ app.patch(
              lmia_status = CASE WHEN $20 THEN $21 ELSE lmia_status END,
              work_permit_support = CASE WHEN $22 THEN $23 ELSE work_permit_support END
          WHERE id = $11
+           AND $6::boolean IS NOT NULL
          RETURNING *`,
         [
           title,
