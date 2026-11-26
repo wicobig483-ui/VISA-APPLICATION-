@@ -1,4 +1,3 @@
-
 {
   "name": "canada-recruitment-portal",
   "version": "1.0.0",
@@ -6,7 +5,8 @@
   "description": "Canada Recruitment Portal",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test:db": "node scripts/test-vacancy-migration.js"
   },
   "engines": {
     "node": ">=20"
