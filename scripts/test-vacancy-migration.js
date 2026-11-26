@@ -11,10 +11,13 @@ async function main() {
     throw new Error("TEST_DATABASE_URL is required for database tests.");
   }
 
-  // Render PostgreSQL requires TLS for external connections. This applies only
-  // to the dedicated TEST_DATABASE_URL used by this isolated migration test.
+  // Force TLS for the external test database. Explicit sslmode=require also
+  // prevents a connection-string sslmode=disable value from overriding pg's
+  // SSL configuration.
+  const secureUrl = new URL(connectionString);
+  secureUrl.searchParams.set("sslmode", "require");
   const client = new Client({
-    connectionString,
+    connectionString: secureUrl.toString(),
     ssl: { rejectUnauthorized: false }
   });
   const schema = "vacancy_test_" + crypto.randomBytes(6).toString("hex");
