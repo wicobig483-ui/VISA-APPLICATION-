@@ -85,6 +85,28 @@
           >
         </label>
 
+        <label>Salary / pay rate (CAD) *
+          <input
+            name="salary"
+            required
+            maxlength="100"
+            placeholder="e.g. CAD $22–$26 per hour"
+          >
+          <small>Enter the employer-confirmed wage. Do not estimate.</small>
+        </label>
+
+        <label>LMIA / work-permit support status
+          <select name="sponsorshipStatus">
+            <option value="Not verified">Not verified</option>
+            <option value="LMIA approved — evidence checked">LMIA approved — evidence checked</option>
+            <option value="LMIA application submitted — not approved">LMIA application submitted — not approved</option>
+            <option value="LMIA-exempt — evidence checked">LMIA-exempt — evidence checked</option>
+            <option value="Employer considers international applicants">Employer considers international applicants</option>
+            <option value="No sponsorship stated">No sponsorship stated</option>
+          </select>
+          <small>Only select an evidence-checked status after reviewing employer documentation.</small>
+        </label>
+
         <label class="full">Description *
           <textarea
             name="description"
