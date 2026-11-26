@@ -1052,6 +1052,10 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
     const salaryConfirmed = req.body.salaryConfirmed === true;
     const lmiaStatus = clean(req.body.lmiaStatus || "Not verified", 40);
     const workPermitSupport = clean(req.body.workPermitSupport || "Not verified", 40);
+    const imageUrl = clean(req.body.imageUrl ?? req.body.image_url, 2000);
+    const imagePublicId = clean(req.body.imagePublicId ?? req.body.image_public_id, 300);
+    const videoUrl = clean(req.body.videoUrl ?? req.body.video_url, 2000);
+    const videoPublicId = clean(req.body.videoPublicId ?? req.body.video_public_id, 300);
     const validPeriods = ["hourly", "weekly", "monthly", "annual"];
     const validLmia = [
       "Not verified", "LMIA required", "LMIA application in progress",
@@ -1084,12 +1088,15 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
     const result = await pool.query(
       `INSERT INTO jobs
        (title, location, description, requirements, employment_type,
+        image_url, image_public_id, video_url, video_public_id,
         salary_min, salary_max, salary_period, salary_currency, salary_confirmed,
         lmia_status, work_permit_support)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'CAD', $9, $10, $11)
+       VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''), NULLIF($7, ''),
+               NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, 'CAD', $13, $14, $15)
        RETURNING *`,
       [
         title, location, description, requirements, employmentType,
+        imageUrl, imagePublicId, videoUrl, videoPublicId,
         salaryMin, salaryMax, salaryPeriod, salaryConfirmed,
         lmiaStatus, workPermitSupport
       ]
