@@ -556,7 +556,7 @@ function editJob(job) {
   form.elements.salaryMax.value = job.salary_max ?? "";
   form.elements.salaryPeriod.value = job.salary_period || "";
   form.elements.salaryConfirmed.checked = job.salary_confirmed === true;
-  form.elements.salaryConfirmed.required = true;
+  form.elements.salaryConfirmed.required = job.salary_min != null;
   form.elements.lmiaStatus.value = job.lmia_status || "Not verified";
   form.elements.workPermitSupport.value = job.work_permit_support || "Not verified";
 
@@ -668,13 +668,22 @@ if (jobForm) {
         employmentType: formData.employmentType,
         description: formData.description,
         requirements: formData.requirements,
-        salaryMin: formData.salaryMin,
-        salaryMax: formData.salaryMax,
-        salaryPeriod: formData.salaryPeriod,
-        salaryConfirmed: jobForm.elements.salaryConfirmed.checked,
         lmiaStatus: formData.lmiaStatus || "Not verified",
         workPermitSupport: formData.workPermitSupport || "Not verified"
       };
+
+      // New vacancies always require a confirmed salary. Legacy vacancies
+      // without a saved wage may be edited without inventing one.
+      const hasSalaryInput = Boolean(
+        formData.salaryMin || formData.salaryMax || formData.salaryPeriod ||
+        jobForm.elements.salaryConfirmed.checked
+      );
+      if (editingJobId === null || hasSalaryInput) {
+        payload.salaryMin = formData.salaryMin;
+        payload.salaryMax = formData.salaryMax;
+        payload.salaryPeriod = formData.salaryPeriod;
+        payload.salaryConfirmed = jobForm.elements.salaryConfirmed.checked;
+      }
 
       // ONLY SEND MEDIA FIELDS WHEN A NEW FILE IS SELECTED
       // This preserves existing media during editing.
