@@ -1051,7 +1051,7 @@ app.post("/api/admin/jobs", adminOnly, async (req, res) => {
 
     if (!title || !location || !description || !salary) {
       return res.status(400).json({
-        error: "Title, location and description are required."
+        error: "Title, location, description and employer-confirmed salary are required."
       });
     }
 
