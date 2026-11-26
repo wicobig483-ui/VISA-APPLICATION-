@@ -32,8 +32,14 @@ jobs:
           node --check public/admin.js
           node --check public/app.js
           node --check scripts/test-vacancy-migration.js
+          node --check scripts/test-vacancy-integration.js
 
       - name: Run isolated PostgreSQL migration tests
         env:
           TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
         run: npm run test:db
+
+      - name: Run isolated vacancy API integration tests
+        env:
+          TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
+        run: npm run test:integration
