@@ -403,8 +403,8 @@ async function loadJobs() {
           (job.salary_confirmed ? " (employer confirmed)" : " (not confirmed)")
         : "Salary: Not provided";
       const support = document.createElement("p");
-      support.textContent = "LMIA: " + (job.lmia_status || "Not verified") +
-        " | Work permit: " + (job.work_permit_support || "Not verified");
+      support.textContent = "Employer-reported LMIA: " + (job.lmia_status || "Not verified") +
+        " | Employer-reported work-permit support: " + (job.work_permit_support || "Not verified");
 
       // STATUS
       const status = document.createElement("p");
