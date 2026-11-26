@@ -1,0 +1,34 @@
+name: Vacancy feature code checks
+
+on:
+  push:
+    branches:
+      - draft/vacancy-salary-lmia-support
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check server.js
+          node --check public/admin.js
+          node --check public/app.js
