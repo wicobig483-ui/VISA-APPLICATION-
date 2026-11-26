@@ -12,6 +12,7 @@ function show(target, message, isError = false) {
 async function api(url, options = {}) {
   const response = await fetch(url, {
     credentials: "same-origin",
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       ...(options.headers || {})
@@ -639,11 +640,21 @@ function renderJob(job) {
     requirements.appendChild(document.createTextNode(job.requirements));
     details.appendChild(requirements);
   }
-  const salaryText = job.salary_min != null
-    ? "CAD " + Number(job.salary_min).toLocaleString("en-CA") +
-      (job.salary_max != null ? "–" + Number(job.salary_max).toLocaleString("en-CA") : "+") +
-      " per " + (job.salary_period || "period not specified") +
-      (job.salary_confirmed ? " · Employer confirmed" : " · Not confirmed")
+  // Accept both API snake_case fields and camelCase fields so the
+  // public card remains compatible with either response shape.
+  const salaryMin = job.salary_min ?? job.salaryMin;
+  const salaryMax = job.salary_max ?? job.salaryMax;
+  const salaryPeriod = job.salary_period ?? job.salaryPeriod;
+  const salaryConfirmed = job.salary_confirmed ?? job.salaryConfirmed;
+  const hasSalary = salaryMin !== null && salaryMin !== undefined && salaryMin !== "";
+  const salaryText = hasSalary
+    ? (job.salary_currency || job.salaryCurrency || "CAD") + " " +
+      Number(salaryMin).toLocaleString("en-CA") +
+      (salaryMax !== null && salaryMax !== undefined && salaryMax !== ""
+        ? "–" + Number(salaryMax).toLocaleString("en-CA")
+        : "+") +
+      " per " + (salaryPeriod || "period not specified") +
+      (salaryConfirmed ? " · Employer confirmed" : " · Not confirmed")
     : "Salary not provided";
   details.appendChild(createElement("p", "job-salary", "Salary: " + salaryText));
 
